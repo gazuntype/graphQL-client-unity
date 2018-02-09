@@ -3,14 +3,11 @@ using graphQLClient;
 
 public class ExampleQuery : MonoBehaviour
 {
+	public string pokemonName = "Pikachu";
 
 	[Tooltip("This is the query call that gives me Pikachu's details")]
 	[TextArea]
 	public string getPokemonDetails;
-
-
-	string pokemonName = "Pikachu";
-	//Input parameters for both arrays and single variables.
 
 
 	void Start()
