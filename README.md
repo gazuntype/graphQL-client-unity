@@ -1,5 +1,5 @@
 # graphQL-client-unity
-C# script to allow easy way of adding queries and mutations to a graphQL server.
+C# script to allow easy way of making queries and mutations to a graphQL server from Unity.
 
 ## Motivation
 While working on the API for one of my games, I used GraphQL. But when trying to communicate with this API from Unity, I found out it was quite difficult to make queries and mutations. It was also very difficult to insert variables as input parameters within this queries and mutations. Hence this graphQL client for Unity.
