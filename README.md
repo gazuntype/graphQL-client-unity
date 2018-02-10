@@ -9,7 +9,7 @@ This script leverages Unity's WWW class to make a POST request to the server's e
 
 ## Example
 Within this repository, there's a unitypackage that can be imported into your project and it has an example scene. The Unity project folder of the example is also available within the repository. This example does the basic functionality of querying the graph API created by [Lucas Bento](https://github.com/lucasbento) which is a server that gives information about different Pokemon and its stats [GraphQL Pokemon](https://github.com/lucasbento/graphql-pokemon). It allows you to display information about any Pokemon you put in the inspector in Unity. Then Parses the JSON result using [SimpleJSON](http://wiki.unity3d.com/index.php/SimpleJSON) and displays information about the Pokemon.
-![Parsed Pokemon Results](https://imgur.com/a/xjkTY)
+![Parsed Pokemon Results](https://i.imgur.com/1ssvXrD.png)
 
 ## How to use
 * Import the graphQL-client-unity unitypackage
