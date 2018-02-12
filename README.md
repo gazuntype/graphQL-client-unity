@@ -138,4 +138,4 @@ public void DisplayResult()
 With the QueryController prefab in your scene, using the methods highlighted above, you can now make queries and mutations to a GraphAPI.
 
 ## Contributing
-Please help make this better by making pull requests and posting issues. There are still a lot of functionality we can add to make this a great graphQL client for Unity
+To contribute, you can open the Unity project itself and edit the GraphQuery.cs script in Assets->graphQL-client->Scripts. Please help make this better by making pull requests and posting issues. There are still a lot of functionality we can add to make this a great graphQL client for Unity. 
