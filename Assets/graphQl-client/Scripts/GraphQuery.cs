@@ -22,6 +22,8 @@ namespace graphQLClient
 		public static Status queryStatus;
 		public static string queryReturn;
 
+		public static string authToken = "";
+
 
 		public class Query
 		{
@@ -44,7 +46,6 @@ namespace graphQLClient
 
 		public static Dictionary<string, string> variable = new Dictionary<string, string>();
 		public static Dictionary<string, string[]> array = new Dictionary<string, string[]>();
-		// Use this for initialization
 
 		public static WWW POST(string details)
 		{
@@ -56,8 +57,11 @@ namespace graphQLClient
 			jsonData = JsonUtility.ToJson(query);
 			byte[] postData = Encoding.ASCII.GetBytes(jsonData);
 			Dictionary<string, string> postHeader = form.headers;
-			if (postHeader.ContainsKey("Content-Type"))
+			if (postHeader.ContainsKey("Content-Type")){
+				postHeader.Add("Authorization", authToken);
 				postHeader["Content-Type"] = "application/json";
+			}
+				
 			else
 				postHeader.Add("Content-Type", "application/json");
 
