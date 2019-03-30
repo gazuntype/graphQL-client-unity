@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 using SimpleJSON;
 using graphQLClient;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 public class ExampleQuery : MonoBehaviour
 {
@@ -29,16 +32,43 @@ public class ExampleQuery : MonoBehaviour
 	public void DisplayResult()
 	{
 		Debug.Log(GraphQuery.queryReturn);
-		var N = JSON.Parse(GraphQuery.queryReturn);
-		string name = N["data"]["pokemon"]["name"].Value;
-		string number = N["data"]["pokemon"]["number"].Value;
-		string evolution = N["data"]["pokemon"]["evolutions"][0]["name"].Value;
-
-		display.text = "Pokedex Number: " + number + "\n Name: " + name + "\n Evolve Form: " + evolution;
+		string data = ParseData(GraphQuery.queryReturn, "pokemon");
+		Pokemon pokemon = JsonConvert.DeserializeObject<Pokemon>(data);
+		Debug.Log("The pokemon name: " + pokemon.attacks.special[1].damage);
+		display.text = "Pokedex Number: " + pokemon.number + "\n Name: " + pokemon.name + "\n Evolve Form: " + pokemon.evolutions[0].name;
 	}
 
 	void OnDisable()
 	{
 		GraphQuery.onQueryComplete -= DisplayResult;
+	}
+
+	string ParseData(string query, string queryName){
+		JObject obj = JsonConvert.DeserializeObject<JObject>(query);
+		return JsonConvert.SerializeObject(obj["data"][queryName]);
+	}
+
+	public class Pokemon
+	{
+		public string name;
+		public string number;
+		public List<Evolution> evolutions;
+		public Attack attacks;
+
+		public class Evolution
+		{
+			public string name;
+		}
+
+		public class Attack
+		{
+			public List<Special> special;
+			public class Special
+			{
+				public string name;
+				public string type;
+				public int damage;
+			}
+		}
 	}
 }

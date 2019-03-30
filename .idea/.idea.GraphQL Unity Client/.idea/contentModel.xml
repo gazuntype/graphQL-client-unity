@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="C:\Users\mrbig\.Rider2018.3\system\extResources" t="IncludeRecursive" />
+    <e p="C:\Users\mrbig\.Rider2018.3\system\resharper-host\local\Transient\ReSharperHost\v183\SolutionCaches\_GraphQL Unity Client.-1762602137.00" t="ExcludeRecursive" />
+    <e p="C:\Users\mrbig\Documents\Unity Games\Open Source Projects\graphQL-unity-client" t="IncludeRecursive">
+      <e p="Assembly-CSharp-firstpass.csproj" t="IncludeRecursive" />
+      <e p="Assembly-CSharp.csproj" t="IncludeRecursive" />
+      <e p="Assets\graphQl-client" t="Include">
+        <e p="Scripts" t="Include">
+          <e p="ExampleQuery.cs" t="Include" />
+          <e p="GraphQuery.cs" t="Include" />
+        </e>
+      </e>
+      <e p="Assets\JsonDotNet" t="Include">
+        <e p="link.xml" t="Include" />
+      </e>
+      <e p="Assets\plugins" t="Include">
+        <e p="SimpleJSON.cs" t="Include" />
+      </e>
+      <e p="GraphQL Unity Client.sln" t="IncludeFlat" />
+      <e p="Library" t="ExcludeRecursive" />
+      <e p="obj" t="ExcludeRecursive" />
+      <e p="packages" t="ExcludeRecursive" />
+      <e p="Temp" t="ExcludeRecursive">
+        <e p="bin" t="ExcludeRecursive" />
+      </e>
+    </e>
+  </component>
+</project>
