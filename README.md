@@ -20,6 +20,9 @@ Within this repository, there's a unitypackage that can be imported into your pr
 * Call GraphQuery.POST(your_query_string).
 * Note: If your query has input variables or array, firstly place a "$" before the variable and "^" after it in the query string and be sure to assign them first by calling GraphQuery.variable["variable_name"] = the_actual_variable. If the input is an array, add "[]" after the variable in the query and call GraphQuery.array["array_name"] = the_actual_array.
 
+## Authentication/Authorization
+You can set the Authorization header of your request to the token of your choice by simply ensureing the static variable GraphQuery.auth is given the value of that token. This would automatically set the Authorization header of the request to the token set.
+
 ```
 query Pokemon
 {
