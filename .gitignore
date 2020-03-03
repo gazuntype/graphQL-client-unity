@@ -31,3 +31,5 @@ sysinfo.txt
 
 # Builds
 *.apk
+/.idea/
+/Logs/
