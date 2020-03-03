@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using GraphQlClient.Core;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -20,18 +21,19 @@ namespace GraphQlClient.Core
         public List<Mutation> mutations;
         
         private string introspection;
-        
+        private Introspection.SchemaClass schemaClass;
         
         public async void Introspect(){
             UnityWebRequest request = await HttpHandler.PostAsync(url, Introspection.schemaIntrospectionQuery);
             introspection = request.downloadHandler.text;
             File.WriteAllText(Application.dataPath + "\\schema.txt",introspection);
-            
+            schemaClass = JsonConvert.DeserializeObject<Introspection.SchemaClass>(introspection);
         }
 
         private void GetSchema(){
             if (String.IsNullOrEmpty(introspection)){
                 introspection = File.ReadAllText(Application.dataPath + "\\schema.text");
+                schemaClass = JsonConvert.DeserializeObject<Introspection.SchemaClass>(introspection);
             }
         }
 
