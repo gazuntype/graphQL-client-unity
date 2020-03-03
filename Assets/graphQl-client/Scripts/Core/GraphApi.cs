@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using GraphQlClient.Core;
@@ -19,17 +20,23 @@ namespace GraphQlClient.Core
         public List<Mutation> mutations;
         
         private string introspection;
-
-        private string introspectionQuery;
+        
         
         public async void Introspect(){
-            introspectionQuery =
-                "{\n  __schema {\n      queryType {\n        fields{\n          name\n          type{\n            name\n            kind\n            ofType {\n              kind\n              name\n            }\n          }\n        }\n      }\n  }\n}";
-            UnityWebRequest request = await HttpHandler.PostAsync(url, introspectionQuery);
+            UnityWebRequest request = await HttpHandler.PostAsync(url, Introspection.schemaIntrospectionQuery);
             introspection = request.downloadHandler.text;
+            File.WriteAllText(Application.dataPath + "\\schema.txt",introspection);
+            
+        }
+
+        private void GetSchema(){
+            if (String.IsNullOrEmpty(introspection)){
+                introspection = File.ReadAllText(Application.dataPath + "\\schema.text");
+            }
         }
 
         public void CreateNewQuery(){
+            GetSchema();
             if (queries == null)
                 queries = new List<Query>();
             Query query = new Query();
