@@ -85,6 +85,7 @@ namespace GraphQlClient.Core
             else{
                 int index = fielder.parent.listIndex + 1;
                 fielder.listIndex = index;
+                fielder.parent.hasChanged = false;
                 query.fields.Insert(index, fielder);
             }
         }
@@ -140,7 +141,10 @@ namespace GraphQlClient.Core
                 set{
                     type = possibleFields[value].type;
                     name = possibleFields[value].name;
+                    if (value != index)
+                        hasChanged = true;
                     index = value;
+                    
                 }
             }
 
@@ -150,6 +154,8 @@ namespace GraphQlClient.Core
             public Field parent;
             public bool hasSubField;
             public List<PossibleField> possibleFields;
+
+            public bool hasChanged;
 
             public Field(){
                 possibleFields = new List<PossibleField>();

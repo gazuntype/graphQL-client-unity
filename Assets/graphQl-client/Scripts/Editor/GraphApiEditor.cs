@@ -80,9 +80,13 @@ namespace GraphQlClient.Editor
                         field.Index = EditorGUILayout.Popup(label, field.Index, fieldOptions);
                         field.CheckSubFields(graph.schemaClass);
                         if (field.parent == null)
-                            EditorGUILayout.LabelField(fieldOptions[field.Index]);
+                            EditorGUILayout.LabelField(fieldOptions[field.Index], "Root field");
                         else{
                             EditorGUILayout.LabelField(fieldOptions[field.Index], $"Parent: {field.parent.name}");
+                            if (field.parent.hasChanged){
+                                query.fields.Remove(field);
+                                break;
+                            }
                         }
                         if (field.hasSubField){
                             if (GUILayout.Button("Create Sub Field")){
