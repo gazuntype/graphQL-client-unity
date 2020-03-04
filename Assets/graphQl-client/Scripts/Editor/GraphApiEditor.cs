@@ -75,15 +75,19 @@ namespace GraphQlClient.Editor
                     }
 
                     foreach (GraphApi.Field field in query.fields){
-                        if (field.parent == null){
-                            string[] fieldOptions = field.possibleFields.Select((aField => aField.name)).ToArray();
-                            field.Index = EditorGUILayout.Popup("Query", field.Index, fieldOptions);
-                            field.CheckSubFields(graph.schemaClass);
+                        string[] fieldOptions = field.possibleFields.Select((aField => aField.name)).ToArray();
+                        string label = field.parent == null ? "Field" : "Sub Field";
+                        field.Index = EditorGUILayout.Popup(label, field.Index, fieldOptions);
+                        field.CheckSubFields(graph.schemaClass);
+                        if (field.parent == null)
                             EditorGUILayout.LabelField(fieldOptions[field.Index]);
-                            if (field.hasSubField){
-                                if (GUILayout.Button("Create Sub Field")){
-                                    
-                                }
+                        else{
+                            EditorGUILayout.LabelField(fieldOptions[field.Index], $"Parent: {field.parent.name}");
+                        }
+                        if (field.hasSubField){
+                            if (GUILayout.Button("Create Sub Field")){
+                                graph.AddField(query, field.possibleFields[field.Index].type, field);
+                                break;
                             }
                         }
                     }

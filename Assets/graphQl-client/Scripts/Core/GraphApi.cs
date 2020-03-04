@@ -69,14 +69,24 @@ namespace GraphQlClient.Core
             return fields;
         }
 
-        public void AddField(Query query, string typeName){
+        public void AddField(Query query, string typeName, Field parent = null){
             Introspection.SchemaClass.Data.Schema.Type type = schemaClass.data.__schema.types.Find((aType => aType.name == typeName));
             List<Introspection.SchemaClass.Data.Schema.Type.Field> subFields = type.fields;
             Field fielder = new Field();
+            fielder.parent = parent;
             foreach (Introspection.SchemaClass.Data.Schema.Type.Field field in subFields){
                 fielder.possibleFields.Add((Field)field);
             }
-            query.fields.Add(fielder);
+
+            if (fielder.parent == null){
+                fielder.listIndex = query.fields.Count;
+                query.fields.Add(fielder);
+            }
+            else{
+                int index = fielder.parent.listIndex + 1;
+                fielder.listIndex = index;
+                query.fields.Insert(index, fielder);
+            }
         }
 
         private string GetFieldType(Introspection.SchemaClass.Data.Schema.Type.Field field){
@@ -133,6 +143,8 @@ namespace GraphQlClient.Core
                     index = value;
                 }
             }
+
+            public int listIndex;
             public string name;
             public string type;
             public Field parent;
