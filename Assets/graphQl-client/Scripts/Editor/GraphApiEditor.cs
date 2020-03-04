@@ -11,10 +11,10 @@ namespace GraphQlClient.Editor
     public class GraphApiEditor : UnityEditor.Editor
     {
         private int index;
-        private int fieldIndex;
 
         public override void OnInspectorGUI(){
             GraphApi graph = (GraphApi) target;
+            graph.GetSchema();
             if (GUILayout.Button("Reset")){
                 graph.DeleteAllQueries();
             }
@@ -76,21 +76,21 @@ namespace GraphQlClient.Editor
 
                     foreach (GraphApi.Field field in query.fields){
                         string[] fieldOptions = field.possibleFields.Select((aField => aField.name)).ToArray();
-                        string label = field.parent == null ? "Field" : "Sub Field";
+                        string label = field.parentIndex > query.fields.Count ? "Field" : "Sub Field";
                         field.Index = EditorGUILayout.Popup(label, field.Index, fieldOptions);
                         field.CheckSubFields(graph.schemaClass);
-                        if (field.parent == null)
+                        if (field.parentIndex > query.fields.Count)
                             EditorGUILayout.LabelField(fieldOptions[field.Index], "Root field");
                         else{
-                            EditorGUILayout.LabelField(fieldOptions[field.Index], $"Parent: {field.parent.name}");
-                            if (field.parent.hasChanged){
+                            EditorGUILayout.LabelField(fieldOptions[field.Index], $"Parent: {query.fields[field.parentIndex].name}");
+                            if (query.fields[field.parentIndex].hasChanged){
                                 query.fields.Remove(field);
                                 break;
                             }
                         }
                         if (field.hasSubField){
                             if (GUILayout.Button("Create Sub Field")){
-                                graph.AddField(query, field.possibleFields[field.Index].type, field);
+                                graph.AddField(query, field.possibleFields[field.Index].type, field.listIndex);
                                 break;
                             }
                         }

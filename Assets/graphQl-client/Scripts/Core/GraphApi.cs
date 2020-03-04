@@ -35,7 +35,7 @@ namespace GraphQlClient.Core
             queryEndpoint = schemaClass.data.__schema.queryType.name;
         }
 
-        private void GetSchema(){
+        public void GetSchema(){
             if (schemaClass == null){
                 introspection = File.ReadAllText(Application.dataPath + "\\schema.txt");
                 schemaClass = JsonConvert.DeserializeObject<Introspection.SchemaClass>(introspection);
@@ -69,23 +69,22 @@ namespace GraphQlClient.Core
             return fields;
         }
 
-        public void AddField(Query query, string typeName, Field parent = null){
+        public void AddField(Query query, string typeName, int parentIndex = 10000){
             Introspection.SchemaClass.Data.Schema.Type type = schemaClass.data.__schema.types.Find((aType => aType.name == typeName));
             List<Introspection.SchemaClass.Data.Schema.Type.Field> subFields = type.fields;
-            Field fielder = new Field();
-            fielder.parent = parent;
+            Field fielder = new Field{parentIndex = parentIndex};
             foreach (Introspection.SchemaClass.Data.Schema.Type.Field field in subFields){
                 fielder.possibleFields.Add((Field)field);
             }
 
-            if (fielder.parent == null){
+            if (fielder.parentIndex > query.fields.Count){
                 fielder.listIndex = query.fields.Count;
                 query.fields.Add(fielder);
             }
             else{
-                int index = fielder.parent.listIndex + 1;
+                int index = fielder.parentIndex + 1;
                 fielder.listIndex = index;
-                fielder.parent.hasChanged = false;
+                query.fields[parentIndex].hasChanged = false;
                 query.fields.Insert(index, fielder);
             }
         }
@@ -135,7 +134,7 @@ namespace GraphQlClient.Core
         [Serializable]
         public class Field
         {
-            private int index;
+            public int index;
             public int Index{
                 get => index;
                 set{
@@ -151,7 +150,7 @@ namespace GraphQlClient.Core
             public int listIndex;
             public string name;
             public string type;
-            public Field parent;
+            public int parentIndex;
             public bool hasSubField;
             public List<PossibleField> possibleFields;
 
