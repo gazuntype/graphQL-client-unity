@@ -11,19 +11,22 @@ namespace GraphQlClient.Editor
     public class GraphApiEditor : UnityEditor.Editor
     {
         private int index;
-        public override void OnInspectorGUI()
-        {
-            GraphApi graph = (GraphApi)target;
+        private int fieldIndex;
+
+        public override void OnInspectorGUI(){
+            GraphApi graph = (GraphApi) target;
             if (GUILayout.Button("Reset")){
                 graph.DeleteAllQueries();
             }
+
             EditorGUILayout.Space();
             EditorGUILayout.Space();
             EditorGUILayout.LabelField(graph.name);
             graph.url = EditorGUILayout.TextField("Url", graph.url);
-            if(GUILayout.Button("Introspect")){
+            if (GUILayout.Button("Introspect")){
                 graph.Introspect();
             }
+
             EditorGUILayout.Space();
             EditorGUILayout.Space();
             if (GUILayout.Button("Create New Query")){
@@ -31,12 +34,13 @@ namespace GraphQlClient.Editor
             }
 
             if (GUILayout.Button("Create New Mutation")){
-                
+
             }
 
             if (GUILayout.Button("Create New Subscription")){
-                
+
             }
+
             EditorGUILayout.Space();
             EditorGUILayout.Space();
 
@@ -52,30 +56,42 @@ namespace GraphQlClient.Editor
                         query.queryString = options[index];
                         EditorGUILayout.LabelField(options[index]);
                         if (GUILayout.Button("Create Field")){
-                            graph.GetQueryReturnType(query, index);
-                            graph.CreateSubFields(query, query.returnType);
+                            graph.GetQueryReturnType(query, options[index]);
+                            graph.AddField(query, query.returnType);
                         }
-                    }
-                    else{
-                        EditorGUILayout.LabelField(query.queryString,
-                            $"Return Type: {query.returnType}");
+
+                        if (GUILayout.Button("Delete")){
+                            graph.DeleteQuery(i);
+                        }
+
+                        return;
                     }
 
-                    List<GraphApi.Field> fields = query.fields.FindAll((aField => aField.parent == null));
-                    if (fields.Count > 0){
-                        string[] returnTypeFields = fields.Select(o => o.name).ToArray();
-                        EditorGUILayout.Popup("Query", 0, returnTypeFields);
+                    EditorGUILayout.LabelField(query.queryString,
+                        $"Return Type: {query.returnType}");
+                    if (GUILayout.Button("Create Field")){
+                        graph.GetQueryReturnType(query, options[index]);
+                        graph.AddField(query, query.returnType);
                     }
-                    
-                        
+
+                    foreach (GraphApi.Field field in query.fields){
+                        if (field.parent == null){
+                            string[] fieldOptions = field.possibleFields.Select((aField => aField.name)).ToArray();
+                            field.Index = EditorGUILayout.Popup("Query", field.Index, fieldOptions);
+                            field.CheckSubFields(graph.schemaClass);
+                            EditorGUILayout.LabelField(fieldOptions[field.Index]);
+                            if (field.hasSubField){
+                                if (GUILayout.Button("Create Sub Field")){
+                                    
+                                }
+                            }
+                        }
+                    }
                     if (GUILayout.Button("Delete")){
                         graph.DeleteQuery(i);
                     }
                 }
             }
-
-
-
             EditorUtility.SetDirty(graph);
         }
     }

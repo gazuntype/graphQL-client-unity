@@ -21,19 +21,25 @@ namespace GraphQlClient.Core
         public List<Mutation> mutations;
         
         private string introspection;
-        private Introspection.SchemaClass schemaClass;
+        
+        public Introspection.SchemaClass schemaClass;
+
+        private string queryEndpoint;
+        
         
         public async void Introspect(){
             UnityWebRequest request = await HttpHandler.PostAsync(url, Introspection.schemaIntrospectionQuery);
             introspection = request.downloadHandler.text;
             File.WriteAllText(Application.dataPath + "\\schema.txt",introspection);
             schemaClass = JsonConvert.DeserializeObject<Introspection.SchemaClass>(introspection);
+            queryEndpoint = schemaClass.data.__schema.queryType.name;
         }
 
         private void GetSchema(){
-            if (String.IsNullOrEmpty(introspection)){
-                introspection = File.ReadAllText(Application.dataPath + "\\schema.text");
+            if (schemaClass == null){
+                introspection = File.ReadAllText(Application.dataPath + "\\schema.txt");
                 schemaClass = JsonConvert.DeserializeObject<Introspection.SchemaClass>(introspection);
+                queryEndpoint = schemaClass.data.__schema.queryType.name;
             }
         }
 
@@ -41,69 +47,52 @@ namespace GraphQlClient.Core
             GetSchema();
             if (queries == null)
                 queries = new List<Query>();
-            Query query = new Query();
-            JObject jObject = JObject.Parse(introspection);
-            JArray jArray = (JArray) jObject["data"]["__schema"]["queryType"]["fields"];
-            query.fields = new List<Field>();
-            query.queryOptions = new List<string>();
-            for (int i = 1; i < jArray.Count; i++){
-                query.queryOptions.Add(jArray[i]["name"].ToString());
+            Query query = new Query{fields = new List<Field>(), queryOptions = new List<string>()};
+            
+            Introspection.SchemaClass.Data.Schema.Type queryType = schemaClass.data.__schema.types.Find((aType => aType.name == queryEndpoint));
+            for (int i = 1; i < queryType.fields.Count; i++){
+                query.queryOptions.Add(queryType.fields[i].name);
             }
 
             queries.Add(query);
         }
+
         
-        public void GetQueryReturnType(Query query, int index){
-            JObject jObject = JObject.Parse(introspection);
-            JArray jArray = (JArray) jObject["data"]["__schema"]["queryType"]["fields"];
-            string fieldName;
-            switch (jArray[index+1]["type"]["kind"].ToString()){
-                case "OBJECT":
-                    fieldName = jArray[index+1]["type"]["name"].ToString();
-                    break;
-                case "LIST":
-                    fieldName = jArray[index+1]["type"]["ofType"]["name"].ToString();
-                    break;
-                default:
-                    fieldName = jArray[index+1]["type"]["name"].ToString();
-                    break;
+
+        private List<Field> GetSubFields(Introspection.SchemaClass.Data.Schema.Type type){
+            List<Introspection.SchemaClass.Data.Schema.Type.Field> subFields = type.fields;
+            List<Field> fields = new List<Field>();
+            foreach (Introspection.SchemaClass.Data.Schema.Type.Field field in subFields){
+                fields.Add((Field)field);
             }
 
-            query.returnType = fieldName;
+            return fields;
         }
 
-        public Field CreateSubFields(Query query, string type){
-            Field field = query.fields.Find((aField => aField.name == type));
-            IntrospectType(query, type, field);
-            return field;
-        }
-
-        private async void IntrospectType(Query query, string type, Field parent = null){
-            string queryText =
-                $"{{\n__type(name: \"{type}\"){{\n    name\n    fields{{\n      name\n      type{{\n        name\n            kind\n        ofType{{\n          name\n        }}\n      }}\n    }}\n  }}\n}}";
-            UnityWebRequest request = await HttpHandler.PostAsync(url, queryText);
-            string result = request.downloadHandler.text;
-            JObject jObject = JObject.Parse(result);
-            JArray jArray = (JArray) jObject["data"]["__type"]["fields"];
-            for (int i = 0; i < jArray.Count; i++){
-                string fieldType;
-                switch (jArray[i]["type"]["kind"].ToString()){
-                    case "OBJECT":
-                        fieldType = jArray[i]["type"]["name"].ToString();
-                        break;
-                    case "LIST":
-                        fieldType = jArray[i]["type"]["ofType"]["name"].ToString();
-                        break;
-                    case "NON_NULL":
-                        fieldType = jArray[i]["type"]["ofType"]["name"].ToString();
-                        break;
-                    default:
-                        fieldType = jArray[i]["type"]["name"].ToString();
-                        break;
-                }
-                Field field = new Field{name = jArray[i]["name"].ToString(),type = fieldType, parent = parent, index = query.fields.Count};
-                query.fields.Add(field);
+        public void AddField(Query query, string typeName){
+            Introspection.SchemaClass.Data.Schema.Type type = schemaClass.data.__schema.types.Find((aType => aType.name == typeName));
+            List<Introspection.SchemaClass.Data.Schema.Type.Field> subFields = type.fields;
+            Field fielder = new Field();
+            foreach (Introspection.SchemaClass.Data.Schema.Type.Field field in subFields){
+                fielder.possibleFields.Add((Field)field);
             }
+            query.fields.Add(fielder);
+        }
+
+        private string GetFieldType(Introspection.SchemaClass.Data.Schema.Type.Field field){
+            Field newField = (Field)field;
+            return newField.type;
+        }
+        
+
+
+        public void GetQueryReturnType(Query query, string queryName){
+            Introspection.SchemaClass.Data.Schema.Type queryType =
+                schemaClass.data.__schema.types.Find((aType => aType.name == queryEndpoint));
+            Introspection.SchemaClass.Data.Schema.Type.Field field =
+                queryType.fields.Find((aField => aField.name == queryName));
+
+            query.returnType = GetFieldType(field);
         }
 
         public void DeleteQuery(int index){
@@ -126,18 +115,64 @@ namespace GraphQlClient.Core
             public List<Field> fields;
         }
 
+        [Serializable]
         public class Mutation
         {
             public string name;
         }
-
+        
+        [Serializable]
         public class Field
         {
-            public int index;
+            private int index;
+            public int Index{
+                get => index;
+                set{
+                    type = possibleFields[value].type;
+                    name = possibleFields[value].name;
+                    index = value;
+                }
+            }
             public string name;
             public string type;
             public Field parent;
-            public List<Field> children;
+            public bool hasSubField;
+            public List<PossibleField> possibleFields;
+
+            public Field(){
+                possibleFields = new List<PossibleField>();
+                index = 0;
+            }
+            
+            public void CheckSubFields(Introspection.SchemaClass schemaClass){
+                Introspection.SchemaClass.Data.Schema.Type t = schemaClass.data.__schema.types.Find((aType => aType.name == type));
+                if (t.fields == null || t.fields.Count == 0){
+                    hasSubField = false;
+                    return;
+                }
+
+                hasSubField = true;
+            }
+            
+            [Serializable]
+            public class PossibleField
+            {
+                public string name;
+                public string type;
+                
+                public static implicit operator PossibleField(Field field){
+                    return new PossibleField{name = field.name, type = field.type};
+                }
+            }
+            public static explicit operator Field(Introspection.SchemaClass.Data.Schema.Type.Field schemaField){
+                Introspection.SchemaClass.Data.Schema.Type ofType = schemaField.type;
+                string typeName;
+                do{
+                    typeName = ofType.name;
+                    ofType = ofType.ofType;
+                } while (ofType != null);
+                return new Field{name = schemaField.name, type = typeName};
+            }
         }
 
         #endregion
