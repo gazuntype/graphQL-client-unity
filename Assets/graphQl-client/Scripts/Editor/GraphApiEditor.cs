@@ -69,8 +69,18 @@ namespace GraphQlClient.Editor
 
                     if (query.isComplete){
                         GUILayout.Label(query.query);
+                        if (query.fields.Count > 0){
+                            if (GUILayout.Button("Edit Query")){
+                                graph.EditQuery(query);
+                            }
+                        }
+                        if (GUILayout.Button("Delete")){
+                            graph.DeleteQuery(i);
+                        }
+                        continue;
                     }
 
+                    
                     EditorGUILayout.LabelField(query.queryString,
                         $"Return Type: {query.returnType}");
                     if (GUILayout.Button("Create Field")){
