@@ -57,6 +57,54 @@ namespace GraphQlClient.Core
             queries.Add(query);
         }
 
+        public void CompleteQuery(Query query){
+            query.isComplete = true;
+            string data = null;
+            int depth = 2;
+            string parent = null;
+            string previousField = null;
+            for (int i = 0; i < query.fields.Count; i++){
+                Field field = query.fields[i];
+                if (field.parentIndex > query.fields.Count){
+                    data += $"\n{GenerateStringTabs(depth)}{field.name}";
+                    previousField = field.name;
+                    continue;
+                }
+
+                if (query.fields[field.parentIndex].name != parent){
+                    
+                    parent = query.fields[field.parentIndex].name;
+                    
+                    if (query.fields[field.parentIndex].name == previousField){
+                        depth++;
+                        data += $"{{\n{GenerateStringTabs(depth)}{field.name}";
+                    }
+                    else{
+                        depth--;
+                        data += $"\n{GenerateStringTabs(depth)}}}\n{GenerateStringTabs(depth)}{field.name}";
+                    }
+                    
+                    previousField = field.name;
+                    
+                }
+                else{
+                    data += $"\n{GenerateStringTabs(depth)}{field.name}";
+                    previousField = field.name;
+                }
+
+                if (i == query.fields.Count - 1){
+                    depth--;
+                    data += $"\n{GenerateStringTabs(depth)}}}\n";
+                }
+
+            }
+            query.query = $"query {query.name}{{\n{GenerateStringTabs(1)}{query.queryString}{{{data}\n{GenerateStringTabs(depth-1)}}}\n}}";
+        }
+
+        public void EditQuery(Query query){
+            query.isComplete = false;
+        }
+
         
 
         private List<Field> GetSubFields(Introspection.SchemaClass.Data.Schema.Type type){
@@ -82,7 +130,15 @@ namespace GraphQlClient.Core
                 query.fields.Add(fielder);
             }
             else{
-                int index = fielder.parentIndex + 1;
+
+                int index = 0;
+                index = query.fields.FindLastIndex((field => field.parentIndex == parentIndex));
+                
+                if (index == -1){
+                    index = fielder.parentIndex;
+                }
+
+                index++;
                 fielder.listIndex = index;
                 query.fields[parentIndex].hasChanged = false;
                 query.fields.Insert(index, fielder);
@@ -113,16 +169,31 @@ namespace GraphQlClient.Core
             queries = new List<Query>();
         }
 
+        #region Helper Functions
+
+        private string GenerateStringTabs(int number){
+            string result = "";
+            for (int i = 0; i < number; i++){
+                result += "    ";
+            }
+
+            return result;
+        }
+
+        #endregion
+
         #region Classes
 
         [Serializable]
         public class Query
         {
             public string name;
+            public string query;
             public string queryString;
             public string returnType;
             public List<string> queryOptions;
             public List<Field> fields;
+            public bool isComplete;
         }
 
         [Serializable]

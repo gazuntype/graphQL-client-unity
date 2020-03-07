@@ -67,6 +67,10 @@ namespace GraphQlClient.Editor
                         return;
                     }
 
+                    if (query.isComplete){
+                        GUILayout.Label(query.query);
+                    }
+
                     EditorGUILayout.LabelField(query.queryString,
                         $"Return Type: {query.returnType}");
                     if (GUILayout.Button("Create Field")){
@@ -93,6 +97,12 @@ namespace GraphQlClient.Editor
                                 graph.AddField(query, field.possibleFields[field.Index].type, field.listIndex);
                                 break;
                             }
+                        }
+                    }
+
+                    if (query.fields.Count > 0){
+                        if (GUILayout.Button("Complete Query")){
+                            graph.CompleteQuery(query);
                         }
                     }
                     if (GUILayout.Button("Delete")){
