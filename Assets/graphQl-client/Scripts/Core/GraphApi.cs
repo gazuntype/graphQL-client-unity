@@ -127,19 +127,25 @@ namespace GraphQlClient.Core
 
             if (fielder.parentIndex > query.fields.Count){
                 fielder.listIndex = query.fields.Count;
+                fielder.depth = 0;
                 query.fields.Add(fielder);
             }
             else{
 
                 int index = 0;
-                index = query.fields.FindLastIndex((field => field.parentIndex == parentIndex));
+                index = query.fields.FindLastIndex(field => field.depth >= query.fields[parentIndex].depth);
+                if (index == -1){
+                    Debug.Log("There's an issue here.");
+                }
+                /*index = query.fields.FindLastIndex((field => field.parentIndex == parentIndex));
                 
                 if (index == -1){
                     index = fielder.parentIndex;
-                }
+                }*/
 
                 index++;
                 fielder.listIndex = index;
+                fielder.depth = query.fields[parentIndex].depth + 1;
                 query.fields[parentIndex].hasChanged = false;
                 query.fields.Insert(index, fielder);
             }
@@ -219,6 +225,7 @@ namespace GraphQlClient.Core
             }
 
             public int listIndex;
+            public int depth;
             public string name;
             public string type;
             public int parentIndex;
