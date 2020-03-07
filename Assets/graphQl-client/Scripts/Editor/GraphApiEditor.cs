@@ -90,21 +90,23 @@ namespace GraphQlClient.Editor
 
                     foreach (GraphApi.Field field in query.fields){
                         string[] fieldOptions = field.possibleFields.Select((aField => aField.name)).ToArray();
-                        string label = field.parentIndex > query.fields.Count ? "Field" : "Sub Field";
+                        string label = field.parentIndexes.Count == 0? "Field" : "Sub Field";
                         field.Index = EditorGUILayout.Popup(label, field.Index, fieldOptions);
                         field.CheckSubFields(graph.schemaClass);
-                        if (field.parentIndex > query.fields.Count)
+                        if (field.parentIndexes.Count == 0)
                             EditorGUILayout.LabelField(fieldOptions[field.Index], "Root field");
                         else{
-                            EditorGUILayout.LabelField(fieldOptions[field.Index], $"Parent: {query.fields[field.parentIndex].name}");
-                            if (query.fields[field.parentIndex].hasChanged){
+                            if (query.fields[field.parentIndexes.Last()].hasChanged){
+                                int parentIndex = query.fields.FindIndex(aField => aField == field);
+                                query.fields.RemoveAll(afield => afield.parentIndexes.Contains(parentIndex));
                                 query.fields.Remove(field);
                                 break;
                             }
+                            EditorGUILayout.LabelField(fieldOptions[field.Index], $"Parent: {query.fields[field.parentIndexes.Last()].name}");
                         }
                         if (field.hasSubField){
                             if (GUILayout.Button("Create Sub Field")){
-                                graph.AddField(query, field.possibleFields[field.Index].type, field.listIndex);
+                                graph.AddField(query, field.possibleFields[field.Index].type, field);
                                 break;
                             }
                         }

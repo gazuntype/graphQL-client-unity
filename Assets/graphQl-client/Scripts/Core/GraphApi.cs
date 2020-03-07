@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using GraphQlClient.Core;
 using Newtonsoft.Json;
@@ -57,48 +58,64 @@ namespace GraphQlClient.Core
             queries.Add(query);
         }
 
+        //Confirm Edge cases
         public void CompleteQuery(Query query){
             query.isComplete = true;
             string data = null;
-            int depth = 2;
             string parent = null;
-            string previousField = null;
+            Field previousField = null;
             for (int i = 0; i < query.fields.Count; i++){
                 Field field = query.fields[i];
-                if (field.parentIndex > query.fields.Count){
-                    data += $"\n{GenerateStringTabs(depth)}{field.name}";
-                    previousField = field.name;
+                if (field.parentIndexes.Count == 0){
+                    if (parent == null){
+                        data += $"\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
+                    }
+                    else{
+                        int count = previousField.parentIndexes.Count - field.parentIndexes.Count;
+                        while (count > 0){
+                            data += $"\n{GenerateStringTabs(count + 1)}}}";
+                            count--;
+                        }
+                        data += $"\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
+                        parent = null;
+                        
+                    }
+                    previousField = field;
                     continue;
                 }
 
-                if (query.fields[field.parentIndex].name != parent){
+                if (query.fields[field.parentIndexes.Last()].name != parent){
                     
-                    parent = query.fields[field.parentIndex].name;
+                    parent = query.fields[field.parentIndexes.Last()].name;
                     
-                    if (query.fields[field.parentIndex].name == previousField){
-                        depth++;
-                        data += $"{{\n{GenerateStringTabs(depth)}{field.name}";
+                    if (query.fields[field.parentIndexes.Last()] == previousField){
+                        
+                        data += $"{{\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
                     }
                     else{
-                        depth--;
-                        data += $"\n{GenerateStringTabs(depth)}}}\n{GenerateStringTabs(depth)}{field.name}";
+                        int count = previousField.parentIndexes.Count - field.parentIndexes.Count;
+                        while (count > 0){
+                            data += $"\n{GenerateStringTabs(count + 1)}}}";
+                            count--;
+                        }
+                        data += $"\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
                     }
                     
-                    previousField = field.name;
+                    previousField = field;
                     
                 }
                 else{
-                    data += $"\n{GenerateStringTabs(depth)}{field.name}";
-                    previousField = field.name;
+                    data += $"\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
+                    previousField = field;
                 }
 
                 if (i == query.fields.Count - 1){
-                    depth--;
-                    data += $"\n{GenerateStringTabs(depth)}}}\n";
+                    
+                    data += $"\n{GenerateStringTabs(field.parentIndexes.Count + 1)}}}\n";
                 }
 
             }
-            query.query = $"query {query.name}{{\n{GenerateStringTabs(1)}{query.queryString}{{{data}\n{GenerateStringTabs(depth-1)}}}\n}}";
+            query.query = $"query {query.name}{{\n{GenerateStringTabs(1)}{query.queryString}{{{data}\n{GenerateStringTabs(1)}}}\n}}";
         }
 
         public void EditQuery(Query query){
@@ -117,35 +134,41 @@ namespace GraphQlClient.Core
             return fields;
         }
 
-        public void AddField(Query query, string typeName, int parentIndex = 10000){
+        //ToDo: Do not allow addition of subfield that already exists
+        public void AddField(Query query, string typeName, Field parent = null){
             Introspection.SchemaClass.Data.Schema.Type type = schemaClass.data.__schema.types.Find((aType => aType.name == typeName));
             List<Introspection.SchemaClass.Data.Schema.Type.Field> subFields = type.fields;
-            Field fielder = new Field{parentIndex = parentIndex};
+            int parentIndex = query.fields.FindIndex(aField => aField == parent);
+            List<int> parentIndexes = new List<int>();
+            if (parent != null){
+                parentIndexes = new List<int>(parent.parentIndexes){parentIndex};
+            }
+            Field fielder = new Field{parentIndexes = parentIndexes};
             foreach (Introspection.SchemaClass.Data.Schema.Type.Field field in subFields){
                 fielder.possibleFields.Add((Field)field);
             }
 
-            if (fielder.parentIndex > query.fields.Count){
-                fielder.listIndex = query.fields.Count;
-                fielder.depth = 0;
+            if (fielder.parentIndexes.Count == 0){
                 query.fields.Add(fielder);
             }
             else{
 
-                int index = 0;
-                index = query.fields.FindLastIndex(field => field.depth >= query.fields[parentIndex].depth);
+                int index;
+                index = query.fields.FindLastIndex(aField =>
+                    aField.parentIndexes.Count > fielder.parentIndexes.Count &&
+                    aField.parentIndexes.Contains(fielder.parentIndexes.Last()));
+
                 if (index == -1){
-                    Debug.Log("There's an issue here.");
+                    index = query.fields.FindLastIndex(aField =>
+                        aField.parentIndexes.Count > fielder.parentIndexes.Count &&
+                        aField.parentIndexes.Last() == fielder.parentIndexes.Last());
                 }
-                /*index = query.fields.FindLastIndex((field => field.parentIndex == parentIndex));
-                
+
                 if (index == -1){
-                    index = fielder.parentIndex;
-                }*/
+                    index = fielder.parentIndexes.Last();
+                }
 
                 index++;
-                fielder.listIndex = index;
-                fielder.depth = query.fields[parentIndex].depth + 1;
                 query.fields[parentIndex].hasChanged = false;
                 query.fields.Insert(index, fielder);
             }
@@ -224,11 +247,9 @@ namespace GraphQlClient.Core
                 }
             }
 
-            public int listIndex;
-            public int depth;
             public string name;
             public string type;
-            public int parentIndex;
+            public List<int> parentIndexes;
             public bool hasSubField;
             public List<PossibleField> possibleFields;
 
@@ -236,6 +257,7 @@ namespace GraphQlClient.Core
 
             public Field(){
                 possibleFields = new List<PossibleField>();
+                parentIndexes = new List<int>();
                 index = 0;
             }
             
