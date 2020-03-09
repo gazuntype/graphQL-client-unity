@@ -26,8 +26,24 @@ namespace GraphQlClient.Core
         public Introspection.SchemaClass schemaClass;
 
         private string queryEndpoint;
-        
-        
+
+        public Query GetQueryByName(string queryName){
+            return queries.Find(aQuery => aQuery.name == queryName);
+        }
+
+        public async Task<UnityWebRequest> Post(Query query, string authToken = null){
+            return await HttpHandler.PostAsync(url, query.query, authToken);
+        }
+
+        public async Task<UnityWebRequest> Post(string queryName, string authToken = null){
+            Query query = GetQueryByName(queryName);
+            return await Post(query, authToken);
+        }
+
+
+
+        #region Editor Use
+
         public async void Introspect(){
             UnityWebRequest request = await HttpHandler.PostAsync(url, Introspection.schemaIntrospectionQuery);
             introspection = request.downloadHandler.text;
@@ -56,66 +72,6 @@ namespace GraphQlClient.Core
             }
 
             queries.Add(query);
-        }
-
-        //Confirm Edge cases
-        public void CompleteQuery(Query query){
-            query.isComplete = true;
-            string data = null;
-            string parent = null;
-            Field previousField = null;
-            for (int i = 0; i < query.fields.Count; i++){
-                Field field = query.fields[i];
-                if (field.parentIndexes.Count == 0){
-                    if (parent == null){
-                        data += $"\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
-                    }
-                    else{
-                        int count = previousField.parentIndexes.Count - field.parentIndexes.Count;
-                        while (count > 0){
-                            data += $"\n{GenerateStringTabs(count + 1)}}}";
-                            count--;
-                        }
-                        data += $"\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
-                        parent = null;
-                        
-                    }
-                    previousField = field;
-                    continue;
-                }
-
-                if (query.fields[field.parentIndexes.Last()].name != parent){
-                    
-                    parent = query.fields[field.parentIndexes.Last()].name;
-                    
-                    if (query.fields[field.parentIndexes.Last()] == previousField){
-                        
-                        data += $"{{\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
-                    }
-                    else{
-                        int count = previousField.parentIndexes.Count - field.parentIndexes.Count;
-                        while (count > 0){
-                            data += $"\n{GenerateStringTabs(count + 1)}}}";
-                            count--;
-                        }
-                        data += $"\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
-                    }
-                    
-                    previousField = field;
-                    
-                }
-                else{
-                    data += $"\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
-                    previousField = field;
-                }
-
-                if (i == query.fields.Count - 1){
-                    
-                    data += $"\n{GenerateStringTabs(field.parentIndexes.Count + 1)}}}\n";
-                }
-
-            }
-            query.query = $"query {query.name}{{\n{GenerateStringTabs(1)}{query.queryString}{{{data}\n{GenerateStringTabs(1)}}}\n}}";
         }
 
         public void EditQuery(Query query){
@@ -198,18 +154,8 @@ namespace GraphQlClient.Core
             queries = new List<Query>();
         }
 
-        #region Helper Functions
-
-        private string GenerateStringTabs(int number){
-            string result = "";
-            for (int i = 0; i < number; i++){
-                result += "    ";
-            }
-
-            return result;
-        }
-
         #endregion
+        
 
         #region Classes
 
@@ -220,9 +166,93 @@ namespace GraphQlClient.Core
             public string query;
             public string queryString;
             public string returnType;
+            private string args;
             public List<string> queryOptions;
             public List<Field> fields;
             public bool isComplete;
+
+            
+            public void SetArgs(string args){
+                this.args = args;
+                CompleteQuery();
+            }
+
+            public void CompleteQuery(){
+                isComplete = true;
+                string data = null;
+                string parent = null;
+                Field previousField = null;
+                for (int i = 0; i < fields.Count; i++){
+                    Field field = fields[i];
+                    if (field.parentIndexes.Count == 0){
+                        if (parent == null){
+                            data += $"\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
+                        }
+                        else{
+                            int count = previousField.parentIndexes.Count - field.parentIndexes.Count;
+                            while (count > 0){
+                                data += $"\n{GenerateStringTabs(count + 1)}}}";
+                                count--;
+                            }
+
+                            data += $"\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
+                            parent = null;
+
+                        }
+
+                        previousField = field;
+                        continue;
+                    }
+
+                    if (fields[field.parentIndexes.Last()].name != parent){
+
+                        parent = fields[field.parentIndexes.Last()].name;
+
+                        if (fields[field.parentIndexes.Last()] == previousField){
+
+                            data += $"{{\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
+                        }
+                        else{
+                            int count = previousField.parentIndexes.Count - field.parentIndexes.Count;
+                            while (count > 0){
+                                data += $"\n{GenerateStringTabs(count + 1)}}}";
+                                count--;
+                            }
+
+                            data += $"\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
+                        }
+
+                        previousField = field;
+
+                    }
+                    else{
+                        data += $"\n{GenerateStringTabs(field.parentIndexes.Count + 2)}{field.name}";
+                        previousField = field;
+                    }
+
+                    if (i == fields.Count - 1){
+                        int count = previousField.parentIndexes.Count;
+                        while (count > 0){
+                            data += $"\n{GenerateStringTabs(count + 1)}}}";
+                            count--;
+                        }
+                    }
+
+                }
+
+                string arg = String.IsNullOrEmpty(args) ? "" : $"({args})";
+                query =
+                    $"query {name}{{\n{GenerateStringTabs(1)}{queryString}{arg}{{{data}\n{GenerateStringTabs(1)}}}\n}}";
+            }
+
+            private string GenerateStringTabs(int number){
+                string result = "";
+                for (int i = 0; i < number; i++){
+                    result += "    ";
+                }
+
+                return result;
+            }
         }
 
         [Serializable]

@@ -14,6 +14,11 @@ namespace GraphQlClient.Editor
 
         public override void OnInspectorGUI(){
             GraphApi graph = (GraphApi) target;
+            GUIStyle style = new GUIStyle();
+            style.fontSize = 15;
+            style.alignment = TextAnchor.MiddleCenter;
+            EditorGUILayout.LabelField(graph.name, style);
+            EditorGUILayout.Space();
             graph.GetSchema();
             if (GUILayout.Button("Reset")){
                 graph.DeleteAllQueries();
@@ -21,7 +26,6 @@ namespace GraphQlClient.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField(graph.name);
             graph.url = EditorGUILayout.TextField("Url", graph.url);
             if (GUILayout.Button("Introspect")){
                 graph.Introspect();
@@ -29,6 +33,7 @@ namespace GraphQlClient.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.Space();
+            EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Create New Query")){
                 graph.CreateNewQuery();
             }
@@ -40,10 +45,12 @@ namespace GraphQlClient.Editor
             if (GUILayout.Button("Create New Subscription")){
 
             }
+            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space();
             EditorGUILayout.Space();
 
+            
             if (graph.queries != null){
                 if (graph.queries.Count > 0)
                     EditorGUILayout.LabelField("Queries");
@@ -64,7 +71,7 @@ namespace GraphQlClient.Editor
                             graph.DeleteQuery(i);
                         }
 
-                        return;
+                        continue;
                     }
 
                     if (query.isComplete){
@@ -114,16 +121,19 @@ namespace GraphQlClient.Editor
 
                     if (query.fields.Count > 0){
                         if (GUILayout.Button("Complete Query")){
-                            graph.CompleteQuery(query);
+                            query.CompleteQuery();
                         }
                     }
                     if (GUILayout.Button("Delete")){
                         graph.DeleteQuery(i);
                     }
                 }
+                EditorGUILayout.Space();
             }
             EditorUtility.SetDirty(graph);
         }
     }
+    
+    
 }
 
