@@ -14,9 +14,7 @@ namespace GraphQlClient.Editor
 
         public override void OnInspectorGUI(){
             GraphApi graph = (GraphApi) target;
-            GUIStyle style = new GUIStyle();
-            style.fontSize = 15;
-            style.alignment = TextAnchor.MiddleCenter;
+            GUIStyle style = new GUIStyle{fontSize = 15, alignment = TextAnchor.MiddleCenter};
             EditorGUILayout.LabelField(graph.name, style);
             EditorGUILayout.Space();
             graph.GetSchema();
@@ -45,12 +43,13 @@ namespace GraphQlClient.Editor
             if (GUILayout.Button("Create New Subscription")){
 
             }
+
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space();
             EditorGUILayout.Space();
 
-            
+
             if (graph.queries != null){
                 if (graph.queries.Count > 0)
                     EditorGUILayout.LabelField("Queries");
@@ -81,13 +80,15 @@ namespace GraphQlClient.Editor
                                 graph.EditQuery(query);
                             }
                         }
+
                         if (GUILayout.Button("Delete")){
                             graph.DeleteQuery(i);
                         }
+
                         continue;
                     }
 
-                    
+                    EditorGUILayout.BeginHorizontal();
                     EditorGUILayout.LabelField(query.queryString,
                         $"Return Type: {query.returnType}");
                     if (GUILayout.Button("Create Field")){
@@ -95,28 +96,31 @@ namespace GraphQlClient.Editor
                         graph.AddField(query, query.returnType);
                     }
 
+                    EditorGUILayout.EndHorizontal();
+
                     foreach (GraphApi.Field field in query.fields){
                         string[] fieldOptions = field.possibleFields.Select((aField => aField.name)).ToArray();
-                        string label = field.parentIndexes.Count == 0? "Field" : "Sub Field";
-                        field.Index = EditorGUILayout.Popup(label, field.Index, fieldOptions);
+                        EditorGUILayout.BeginHorizontal();
+                        GUIStyle fieldStyle = new GUIStyle
+                            {contentOffset = new Vector2(field.parentIndexes.Count * 20, 0)};
+                        field.Index = EditorGUILayout.Popup(field.Index, fieldOptions, fieldStyle);
                         field.CheckSubFields(graph.schemaClass);
-                        if (field.parentIndexes.Count == 0)
-                            EditorGUILayout.LabelField(fieldOptions[field.Index], "Root field");
-                        else{
-                            if (query.fields[field.parentIndexes.Last()].hasChanged){
-                                int parentIndex = query.fields.FindIndex(aField => aField == field);
-                                query.fields.RemoveAll(afield => afield.parentIndexes.Contains(parentIndex));
-                                query.fields.Remove(field);
-                                break;
-                            }
-                            EditorGUILayout.LabelField(fieldOptions[field.Index], $"Parent: {query.fields[field.parentIndexes.Last()].name}");
-                        }
                         if (field.hasSubField){
                             if (GUILayout.Button("Create Sub Field")){
                                 graph.AddField(query, field.possibleFields[field.Index].type, field);
                                 break;
                             }
                         }
+
+                        EditorGUILayout.EndHorizontal();
+
+                        if (field.hasChanged){
+                            int parentIndex = query.fields.FindIndex(aField => aField == field);
+                            query.fields.RemoveAll(afield => afield.parentIndexes.Contains(parentIndex));
+                            field.hasChanged = false;
+                            break;
+                        }
+
                     }
 
                     if (query.fields.Count > 0){
@@ -124,16 +128,19 @@ namespace GraphQlClient.Editor
                             query.CompleteQuery();
                         }
                     }
+
                     if (GUILayout.Button("Delete")){
                         graph.DeleteQuery(i);
                     }
                 }
+
                 EditorGUILayout.Space();
             }
+
             EditorUtility.SetDirty(graph);
         }
     }
-    
-    
+
+
 }
 
