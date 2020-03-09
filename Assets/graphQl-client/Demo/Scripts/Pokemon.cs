@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using GraphQlClient.Core;
+using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
@@ -12,7 +13,8 @@ public class Pokemon : MonoBehaviour
 
     public async void GetPokemonDetails(){
         GraphApi.Query query = pokemonGraph.GetQueryByName("PokemonByName");
-        string args = $"name: \"{pokemonName.text}\"";
+        string json = JsonConvert.SerializeObject(new{name = pokemonName.text});
+        string args = GraphApi.JsonToArgument(json);
         query.SetArgs(args);
         UnityWebRequest request = await pokemonGraph.Post(query);
         Debug.Log(request.downloadHandler.text);
@@ -20,7 +22,8 @@ public class Pokemon : MonoBehaviour
 
     public async void GetAllPokemonDetails(){
         GraphApi.Query query = pokemonGraph.GetQueryByName("AllPokemon");
-        string args = $"first: 100";
+        string jsonInput = JsonConvert.SerializeObject(new{first = 100});
+        string args = GraphApi.JsonToArgument(jsonInput);
         query.SetArgs(args);
         UnityWebRequest request = await pokemonGraph.Post(query);
         Debug.Log(request.downloadHandler.text);

@@ -40,6 +40,30 @@ namespace GraphQlClient.Core
             return await Post(query, authToken);
         }
 
+        #region Utility
+
+        public static string JsonToArgument(string jsonInput){
+            char[] jsonChar = jsonInput.ToCharArray();
+            List<int> indexes = new List<int>();
+            for (int i = 0; i < jsonChar.Length; i++){
+                if (jsonChar[i] == '\"'){
+                    if (indexes.Count == 2)
+                        indexes = new List<int>();
+                    indexes.Add(i);
+                }
+
+                if (jsonChar[i] == ':'){
+                    jsonChar[indexes[0]] = ' ';
+                    jsonChar[indexes[1]] = ' ';
+                }
+            }
+
+            string result = new string(jsonChar);
+            return result;
+        }
+
+        #endregion
+
 
 
         #region Editor Use
