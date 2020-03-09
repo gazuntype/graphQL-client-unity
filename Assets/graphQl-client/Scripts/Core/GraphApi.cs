@@ -19,13 +19,17 @@ namespace GraphQlClient.Core
 
         public List<Query> queries;
 
-        public List<Mutation> mutations;
+        public List<Query> mutations;
+
+        public List<Query> subscriptions;
         
         private string introspection;
         
         public Introspection.SchemaClass schemaClass;
 
         private string queryEndpoint;
+        private string mutationEndpoint;
+        private string subscriptionEndpoint;
 
         public Query GetQueryByName(string queryName){
             return queries.Find(aQuery => aQuery.name == queryName);
@@ -68,27 +72,42 @@ namespace GraphQlClient.Core
 
         #region Editor Use
 
+        //Todo: Fix inability to introspect in edit mode
+        //Todo: Put schema file in proper location
         public async void Introspect(){
             UnityWebRequest request = await HttpHandler.PostAsync(url, Introspection.schemaIntrospectionQuery);
             introspection = request.downloadHandler.text;
-            File.WriteAllText(Application.dataPath + "\\schema.txt",introspection);
+            File.WriteAllText(Application.dataPath + $"\\{name}schema.txt",introspection);
             schemaClass = JsonConvert.DeserializeObject<Introspection.SchemaClass>(introspection);
             queryEndpoint = schemaClass.data.__schema.queryType.name;
+            mutationEndpoint = schemaClass.data.__schema.mutationType.name;
+            subscriptionEndpoint = schemaClass.data.__schema.subscriptionType.name;
         }
 
         public void GetSchema(){
             if (schemaClass == null){
-                introspection = File.ReadAllText(Application.dataPath + "\\schema.txt");
+                try{
+                    introspection = File.ReadAllText(Application.dataPath + $"\\{name}schema.txt");
+                }
+                catch{
+                    Debug.Log("No saved schema");
+                    return;
+                }
+                
                 schemaClass = JsonConvert.DeserializeObject<Introspection.SchemaClass>(introspection);
                 queryEndpoint = schemaClass.data.__schema.queryType.name;
+                mutationEndpoint = schemaClass.data.__schema.mutationType.name;
+                subscriptionEndpoint = schemaClass.data.__schema.subscriptionType.name;
             }
         }
+        
+        
 
         public void CreateNewQuery(){
             GetSchema();
             if (queries == null)
                 queries = new List<Query>();
-            Query query = new Query{fields = new List<Field>(), queryOptions = new List<string>()};
+            Query query = new Query{fields = new List<Field>(), queryOptions = new List<string>(), type = Query.Type.Query};
             
             Introspection.SchemaClass.Data.Schema.Type queryType = schemaClass.data.__schema.types.Find((aType => aType.name == queryEndpoint));
             for (int i = 1; i < queryType.fields.Count; i++){
@@ -98,20 +117,56 @@ namespace GraphQlClient.Core
             queries.Add(query);
         }
 
+        public void CreateNewMutation(){
+            GetSchema();
+            if (mutations == null)
+                mutations = new List<Query>();
+            Query mutation = new Query{fields = new List<Field>(), queryOptions = new List<string>(), type = Query.Type.Mutation};
+            
+            Introspection.SchemaClass.Data.Schema.Type mutationType = schemaClass.data.__schema.types.Find((aType => aType.name == mutationEndpoint));
+            if (mutationType == null){
+                Debug.Log("No mutations");
+                return;
+            }
+            for (int i = 1; i < mutationType.fields.Count; i++){
+                mutation.queryOptions.Add(mutationType.fields[i].name);
+            }
+
+            mutations.Add(mutation);
+        }
+        
+        public void CreateNewSubscription(){
+            GetSchema();
+            if (subscriptions == null)
+                subscriptions = new List<Query>();
+            Query subscription = new Query{fields = new List<Field>(), queryOptions = new List<string>(), type = Query.Type.Subscription};
+            
+            Introspection.SchemaClass.Data.Schema.Type subscriptionType = schemaClass.data.__schema.types.Find((aType => aType.name == subscriptionEndpoint));
+            if (subscriptionType == null){
+                Debug.Log("No subscriptions");
+                return;
+            }
+            for (int i = 1; i < subscriptionType.fields.Count; i++){
+                subscription.queryOptions.Add(subscriptionType.fields[i].name);
+            }
+
+            subscriptions.Add(subscription);
+        }
+
         public void EditQuery(Query query){
             query.isComplete = false;
         }
 
         
 
-        private List<Field> GetSubFields(Introspection.SchemaClass.Data.Schema.Type type){
-            List<Introspection.SchemaClass.Data.Schema.Type.Field> subFields = type.fields;
-            List<Field> fields = new List<Field>();
-            foreach (Introspection.SchemaClass.Data.Schema.Type.Field field in subFields){
-                fields.Add((Field)field);
+        public bool CheckSubFields(string typeName){
+            Introspection.SchemaClass.Data.Schema.Type type = schemaClass.data.__schema.types.Find((aType => aType.name == typeName));
+            if (type?.fields == null || type.fields.Count == 0){
+               // Debug.Log(type.fields.Count);
+                return false;
             }
 
-            return fields;
+            return true;
         }
 
         //ToDo: Do not allow addition of subfield that already exists
@@ -124,6 +179,7 @@ namespace GraphQlClient.Core
                 parentIndexes = new List<int>(parent.parentIndexes){parentIndex};
             }
             Field fielder = new Field{parentIndexes = parentIndexes};
+            
             foreach (Introspection.SchemaClass.Data.Schema.Type.Field field in subFields){
                 fielder.possibleFields.Add((Field)field);
             }
@@ -162,20 +218,37 @@ namespace GraphQlClient.Core
 
 
         public void GetQueryReturnType(Query query, string queryName){
+            string endpoint;
+            switch (query.type){
+                case Query.Type.Query:
+                    endpoint = queryEndpoint;
+                    break;
+                case Query.Type.Mutation:
+                    endpoint = mutationEndpoint;
+                    break;
+                case Query.Type.Subscription:
+                    endpoint = subscriptionEndpoint;
+                    break;
+                default:
+                    endpoint = queryEndpoint;
+                    break;
+            }
             Introspection.SchemaClass.Data.Schema.Type queryType =
-                schemaClass.data.__schema.types.Find((aType => aType.name == queryEndpoint));
+                schemaClass.data.__schema.types.Find((aType => aType.name == endpoint));
             Introspection.SchemaClass.Data.Schema.Type.Field field =
                 queryType.fields.Find((aField => aField.name == queryName));
 
             query.returnType = GetFieldType(field);
         }
 
-        public void DeleteQuery(int index){
-            queries.RemoveAt(index);
+        public void DeleteQuery(List<Query> query, int index){
+            query.RemoveAt(index);
         }
 
         public void DeleteAllQueries(){
             queries = new List<Query>();
+            mutations = new List<Query>();
+            subscriptions = new List<Query>();
         }
 
         #endregion
@@ -187,6 +260,7 @@ namespace GraphQlClient.Core
         public class Query
         {
             public string name;
+            public Type type;
             public string query;
             public string queryString;
             public string returnType;
@@ -195,7 +269,12 @@ namespace GraphQlClient.Core
             public List<Field> fields;
             public bool isComplete;
 
-            
+            public enum Type
+            {
+                Query,
+                Mutation,
+                Subscription
+            }
             public void SetArgs(string args){
                 this.args = args;
                 CompleteQuery();
@@ -279,12 +358,6 @@ namespace GraphQlClient.Core
             }
         }
 
-        [Serializable]
-        public class Mutation
-        {
-            public string name;
-        }
-        
         [Serializable]
         public class Field
         {

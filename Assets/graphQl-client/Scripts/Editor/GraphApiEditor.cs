@@ -31,17 +31,20 @@ namespace GraphQlClient.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.Space();
+            if (graph.schemaClass == null){
+                return;
+            }
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Create New Query")){
                 graph.CreateNewQuery();
             }
 
             if (GUILayout.Button("Create New Mutation")){
-
+                graph.CreateNewMutation();
             }
 
             if (GUILayout.Button("Create New Subscription")){
-
+                graph.CreateNewSubscription();
             }
 
             EditorGUILayout.EndHorizontal();
@@ -49,25 +52,33 @@ namespace GraphQlClient.Editor
             EditorGUILayout.Space();
             EditorGUILayout.Space();
 
+            DisplayFields(graph, graph.queries, "Query");
+            DisplayFields(graph, graph.mutations, "Mutation");
+            DisplayFields(graph, graph.subscriptions, "Subscription");
 
-            if (graph.queries != null){
-                if (graph.queries.Count > 0)
-                    EditorGUILayout.LabelField("Queries");
-                for (int i = 0; i < graph.queries.Count; i++){
-                    GraphApi.Query query = graph.queries[i];
-                    query.name = EditorGUILayout.TextField("Query Name", query.name);
+            EditorUtility.SetDirty(graph);
+        }
+
+        private void DisplayFields(GraphApi graph, List<GraphApi.Query> queryList, string type){
+            if (queryList != null){
+                if (queryList.Count > 0)
+                    EditorGUILayout.LabelField(type);
+                for (int i = 0; i < queryList.Count; i++){
+                    EditorGUILayout.Space();
+                    EditorGUILayout.Space();
+                    EditorGUILayout.Space();
+                    GraphApi.Query query = queryList[i];
+                    query.name = EditorGUILayout.TextField($"{type} Name", query.name);
                     string[] options = query.queryOptions.ToArray();
                     if (String.IsNullOrEmpty(query.returnType)){
-                        index = EditorGUILayout.Popup("Query", index, options);
+                        index = EditorGUILayout.Popup(type, index, options);
                         query.queryString = options[index];
                         EditorGUILayout.LabelField(options[index]);
-                        if (GUILayout.Button("Create Field")){
+                        if (GUILayout.Button($"Confirm {type}")){
                             graph.GetQueryReturnType(query, options[index]);
-                            graph.AddField(query, query.returnType);
                         }
-
                         if (GUILayout.Button("Delete")){
-                            graph.DeleteQuery(i);
+                            graph.DeleteQuery(queryList, i);
                         }
 
                         continue;
@@ -76,40 +87,51 @@ namespace GraphQlClient.Editor
                     if (query.isComplete){
                         GUILayout.Label(query.query);
                         if (query.fields.Count > 0){
-                            if (GUILayout.Button("Edit Query")){
+                            if (GUILayout.Button($"Edit {type}")){
                                 graph.EditQuery(query);
                             }
                         }
 
                         if (GUILayout.Button("Delete")){
-                            graph.DeleteQuery(i);
+                            graph.DeleteQuery(queryList, i);
                         }
 
                         continue;
                     }
 
-                    EditorGUILayout.BeginHorizontal();
+
                     EditorGUILayout.LabelField(query.queryString,
                         $"Return Type: {query.returnType}");
-                    if (GUILayout.Button("Create Field")){
-                        graph.GetQueryReturnType(query, options[index]);
-                        graph.AddField(query, query.returnType);
+                    if (graph.CheckSubFields(query.returnType)){
+                        if (GUILayout.Button("Create Field")){
+                            graph.GetQueryReturnType(query, options[index]);
+                            graph.AddField(query, query.returnType);
+                        }
                     }
-
-                    EditorGUILayout.EndHorizontal();
+                    
 
                     foreach (GraphApi.Field field in query.fields){
+                        GUI.color = new Color(0.8f,0.8f,0.8f);
                         string[] fieldOptions = field.possibleFields.Select((aField => aField.name)).ToArray();
                         EditorGUILayout.BeginHorizontal();
-                        GUIStyle fieldStyle = new GUIStyle
-                            {contentOffset = new Vector2(field.parentIndexes.Count * 20, 0)};
+                        GUIStyle fieldStyle = EditorStyles.popup;
+                        fieldStyle.contentOffset = new Vector2(field.parentIndexes.Count * 20, 0);
                         field.Index = EditorGUILayout.Popup(field.Index, fieldOptions, fieldStyle);
+                        GUI.color = Color.white;
                         field.CheckSubFields(graph.schemaClass);
                         if (field.hasSubField){
                             if (GUILayout.Button("Create Sub Field")){
                                 graph.AddField(query, field.possibleFields[field.Index].type, field);
                                 break;
                             }
+                        }
+
+                        if (GUILayout.Button("x", GUILayout.MaxWidth(20))){
+                            int parentIndex = query.fields.FindIndex(aField => aField == field);
+                            query.fields.RemoveAll(afield => afield.parentIndexes.Contains(parentIndex));
+                            query.fields.Remove(field);
+                            field.hasChanged = false;
+                            break;
                         }
 
                         EditorGUILayout.EndHorizontal();
@@ -121,26 +143,27 @@ namespace GraphQlClient.Editor
                             break;
                         }
 
+                        
                     }
+                    EditorGUILayout.Space();
+                    EditorGUILayout.Space();
 
                     if (query.fields.Count > 0){
-                        if (GUILayout.Button("Complete Query")){
+                        if (GUILayout.Button($"Preview {type}")){
                             query.CompleteQuery();
                         }
                     }
 
                     if (GUILayout.Button("Delete")){
-                        graph.DeleteQuery(i);
+                        graph.DeleteQuery(queryList, i);
                     }
+                    
                 }
 
                 EditorGUILayout.Space();
             }
-
-            EditorUtility.SetDirty(graph);
+            
         }
     }
-
-
 }
 
