@@ -31,16 +31,31 @@ namespace GraphQlClient.Core
         private string mutationEndpoint;
         private string subscriptionEndpoint;
 
-        public Query GetQueryByName(string queryName){
-            return queries.Find(aQuery => aQuery.name == queryName);
+        public Query GetQueryByName(string queryName, Query.Type type){
+            List<Query> querySearch;
+            switch (type){
+                case Query.Type.Mutation:
+                    querySearch = mutations;
+                    break;
+                case Query.Type.Query:
+                    querySearch = queries;
+                    break;
+                case Query.Type.Subscription:
+                    querySearch = subscriptions;
+                    break;
+                default:
+                    querySearch = queries;
+                    break;
+            }
+            return querySearch.Find(aQuery => aQuery.name == queryName);
         }
 
         public async Task<UnityWebRequest> Post(Query query, string authToken = null){
             return await HttpHandler.PostAsync(url, query.query, authToken);
         }
 
-        public async Task<UnityWebRequest> Post(string queryName, string authToken = null){
-            Query query = GetQueryByName(queryName);
+        public async Task<UnityWebRequest> Post(string queryName, Query.Type type, string authToken = null){
+            Query query = GetQueryByName(queryName, type);
             return await Post(query, authToken);
         }
 
@@ -162,7 +177,6 @@ namespace GraphQlClient.Core
         public bool CheckSubFields(string typeName){
             Introspection.SchemaClass.Data.Schema.Type type = schemaClass.data.__schema.types.Find((aType => aType.name == typeName));
             if (type?.fields == null || type.fields.Count == 0){
-               // Debug.Log(type.fields.Count);
                 return false;
             }
 
