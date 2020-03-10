@@ -59,6 +59,15 @@ namespace GraphQlClient.Core
             return await Post(query, authToken);
         }
 
+        public async Task Subscribe(Query query){
+            await HttpHandler.WebsocketConnect(url, query.query);
+        }
+
+        public async Task Subscribe(string queryName, Query.Type type){
+            Query query = GetQueryByName(queryName, type); 
+            await Subscribe(query);
+        }
+
         #region Utility
 
         public static string JsonToArgument(string jsonInput){

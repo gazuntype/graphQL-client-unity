@@ -13,8 +13,8 @@ namespace GraphQlClient.Core
 {
 	public class HttpHandler
 	{
-		ClientWebSocket cws = null;
-		ArraySegment<byte> buf = new ArraySegment<byte>(new byte[1024]);
+		static ClientWebSocket cws = null;
+		static ArraySegment<byte> buf = new ArraySegment<byte>(new byte[1024]);
 		
 		public static async Task<UnityWebRequest> PostAsync(string url, string details, string authToken = null){
             string jsonData = JsonConvert.SerializeObject(new{query = details});
@@ -66,7 +66,7 @@ namespace GraphQlClient.Core
         #region Websocket
 
         //Use this to subscribe to a graphql endpoint
-		public async Task WebsocketConnect(string subscriptionUrl, string details){
+		public static async Task WebsocketConnect(string subscriptionUrl, string details){
 			cws = new ClientWebSocket();
 			cws.Options.AddSubProtocol("graphql-subscriptions");
 			Uri u = new Uri(subscriptionUrl);
@@ -82,22 +82,22 @@ namespace GraphQlClient.Core
 			}
 		}
 
-		async Task WebsocketInit(){
+		static async Task WebsocketInit(){
 			string jsonData = "{\"type\":\"init\"}";
 			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.ASCII.GetBytes(jsonData));
 			await cws.SendAsync(b, WebSocketMessageType.Text, true, CancellationToken.None);
 			await GetWsReturn();
 		}
 		
-		async Task WebsocketSend(string details){
+		static async Task WebsocketSend(string details){
 			string jsonData = JsonConvert.SerializeObject(new {id = "1",  type = "subscription_start", query = details});
 			Debug.Log(jsonData);
 			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.ASCII.GetBytes(jsonData));
 			await cws.SendAsync(b, WebSocketMessageType.Text, true, CancellationToken.None);
 		}
 		
-		//use this to get information from the websocket
-		public async Task<string> GetWsReturn(){
+		//Call GetWsReturn to wait for a message from a websocket. GetWsReturn has to be called for each message
+		public static async Task<string> GetWsReturn(){
 			buf = WebSocket.CreateClientBuffer(1024, 1024);
 			WebSocketReceiveResult r;
 			string result = "";
