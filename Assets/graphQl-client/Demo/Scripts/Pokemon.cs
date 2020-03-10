@@ -10,6 +10,7 @@ public class Pokemon : MonoBehaviour
 {
     public GraphApi pokemonGraph;
     public InputField pokemonName;
+    public Text displayText;
 
     public async void GetPokemonDetails(){
         GraphApi.Query query = pokemonGraph.GetQueryByName("PokemonByName", GraphApi.Query.Type.Query);
@@ -17,7 +18,7 @@ public class Pokemon : MonoBehaviour
         string args = GraphApi.JsonToArgument(json);
         query.SetArgs(args);
         UnityWebRequest request = await pokemonGraph.Post(query);
-        Debug.Log(request.downloadHandler.text);
+        displayText.text = request.downloadHandler.text;
     }
 
     public async void GetAllPokemonDetails(){
@@ -26,6 +27,6 @@ public class Pokemon : MonoBehaviour
         string args = GraphApi.JsonToArgument(jsonInput);
         query.SetArgs(args);
         UnityWebRequest request = await pokemonGraph.Post(query);
-        Debug.Log(request.downloadHandler.text);
+        displayText.text = request.downloadHandler.text;
     }
 }

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using GraphQlClient.Core;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -31,6 +32,7 @@ namespace GraphQlClient.Core
         private string mutationEndpoint;
         private string subscriptionEndpoint;
 
+        private UnityWebRequest request;
         public Query GetQueryByName(string queryName, Query.Type type){
             List<Query> querySearch;
             switch (type){
@@ -73,6 +75,8 @@ namespace GraphQlClient.Core
         public static string JsonToArgument(string jsonInput){
             char[] jsonChar = jsonInput.ToCharArray();
             List<int> indexes = new List<int>();
+            jsonChar[0] = ' ';
+            jsonChar[jsonChar.Length - 1] = ' ';
             for (int i = 0; i < jsonChar.Length; i++){
                 if (jsonChar[i] == '\"'){
                     if (indexes.Count == 2)
@@ -95,17 +99,26 @@ namespace GraphQlClient.Core
 
 
         #region Editor Use
-
-        //Todo: Fix inability to introspect in edit mode
+        
         //Todo: Put schema file in proper location
         public async void Introspect(){
-            UnityWebRequest request = await HttpHandler.PostAsync(url, Introspection.schemaIntrospectionQuery);
+            request = await HttpHandler.PostAsync(url, Introspection.schemaIntrospectionQuery);
+            EditorApplication.update += HandleIntrospection;
+        }
+
+        void HandleIntrospection(){
+            if (!request.isDone)
+                return;
+            EditorApplication.update -= HandleIntrospection;
             introspection = request.downloadHandler.text;
             File.WriteAllText(Application.dataPath + $"\\{name}schema.txt",introspection);
             schemaClass = JsonConvert.DeserializeObject<Introspection.SchemaClass>(introspection);
-            queryEndpoint = schemaClass.data.__schema.queryType.name;
-            mutationEndpoint = schemaClass.data.__schema.mutationType.name;
-            subscriptionEndpoint = schemaClass.data.__schema.subscriptionType.name;
+            if (schemaClass.data.__schema.queryType != null)
+                queryEndpoint = schemaClass.data.__schema.queryType.name;
+            if (schemaClass.data.__schema.mutationType != null)
+                mutationEndpoint = schemaClass.data.__schema.mutationType.name;
+            if (schemaClass.data.__schema.subscriptionType != null)
+                subscriptionEndpoint = schemaClass.data.__schema.subscriptionType.name;
         }
 
         public void GetSchema(){
@@ -114,14 +127,16 @@ namespace GraphQlClient.Core
                     introspection = File.ReadAllText(Application.dataPath + $"\\{name}schema.txt");
                 }
                 catch{
-                    Debug.Log("No saved schema");
                     return;
                 }
                 
                 schemaClass = JsonConvert.DeserializeObject<Introspection.SchemaClass>(introspection);
-                queryEndpoint = schemaClass.data.__schema.queryType.name;
-                mutationEndpoint = schemaClass.data.__schema.mutationType.name;
-                subscriptionEndpoint = schemaClass.data.__schema.subscriptionType.name;
+                if (schemaClass.data.__schema.queryType != null)
+                    queryEndpoint = schemaClass.data.__schema.queryType.name;
+                if (schemaClass.data.__schema.mutationType != null)
+                    mutationEndpoint = schemaClass.data.__schema.mutationType.name;
+                if (schemaClass.data.__schema.subscriptionType != null)
+                    subscriptionEndpoint = schemaClass.data.__schema.subscriptionType.name;
             }
         }
         
