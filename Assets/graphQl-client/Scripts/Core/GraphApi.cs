@@ -149,7 +149,7 @@ namespace GraphQlClient.Core
             Query query = new Query{fields = new List<Field>(), queryOptions = new List<string>(), type = Query.Type.Query};
             
             Introspection.SchemaClass.Data.Schema.Type queryType = schemaClass.data.__schema.types.Find((aType => aType.name == queryEndpoint));
-            for (int i = 1; i < queryType.fields.Count; i++){
+            for (int i = 0; i < queryType.fields.Count; i++){
                 query.queryOptions.Add(queryType.fields[i].name);
             }
 
