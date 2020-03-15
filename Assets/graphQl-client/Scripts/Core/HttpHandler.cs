@@ -43,7 +43,7 @@ namespace GraphQlClient.Core
             return request;
         }
 
-        public static async Task<UnityWebRequest> GetAsync(string url, string authToken){
+        public static async Task<UnityWebRequest> GetAsync(string url, string authToken = null){
             UnityWebRequest request = UnityWebRequest.Get(url);
             if (!String.IsNullOrEmpty(authToken)) 
                 request.SetRequestHeader("Authorization", "Bearer " + authToken);
@@ -66,16 +66,23 @@ namespace GraphQlClient.Core
         #region Websocket
 
         //Use this to subscribe to a graphql endpoint
-		public static async Task WebsocketConnect(string subscriptionUrl, string details){
+		public static async Task WebsocketConnect(string subscriptionUrl, string details, string socketId = null, string protocol = null, string authToken = null){
+			string subUrl = subscriptionUrl.Replace("http", "ws");
+			string id = String.IsNullOrEmpty(socketId) ? "1" : socketId;
 			cws = new ClientWebSocket();
-			cws.Options.AddSubProtocol("graphql-subscriptions");
-			Uri u = new Uri(subscriptionUrl);
+			if (String.IsNullOrEmpty(protocol))
+				cws.Options.AddSubProtocol("graphql-ws");
+			else 
+				cws.Options.AddSubProtocol(protocol);
+			if (!String.IsNullOrEmpty(authToken))
+				cws.Options.SetRequestHeader("Authorization", "Bearer " + authToken);
+			Uri u = new Uri(subUrl);
 			try{
 				await cws.ConnectAsync(u, CancellationToken.None);
 				if (cws.State == WebSocketState.Open)
 					Debug.Log("connected");
 				await WebsocketInit();
-				await WebsocketSend(details);		
+				await WebsocketSend(id, details);
 			}
 			catch (Exception e){
 				Debug.Log("woe " + e.Message);
@@ -83,15 +90,14 @@ namespace GraphQlClient.Core
 		}
 
 		static async Task WebsocketInit(){
-			string jsonData = "{\"type\":\"init\"}";
+			string jsonData = "{\"type\":\"connection_init\"}";
 			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.ASCII.GetBytes(jsonData));
 			await cws.SendAsync(b, WebSocketMessageType.Text, true, CancellationToken.None);
 			await GetWsReturn();
 		}
 		
-		static async Task WebsocketSend(string details){
-			string jsonData = JsonConvert.SerializeObject(new {id = "1",  type = "subscription_start", query = details});
-			Debug.Log(jsonData);
+		static async Task WebsocketSend(string id, string details){
+			string jsonData = JsonConvert.SerializeObject(new {id = $"\"id\"",  type = "start", payload = new{query = details}});
 			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.ASCII.GetBytes(jsonData));
 			await cws.SendAsync(b, WebSocketMessageType.Text, true, CancellationToken.None);
 		}
@@ -103,9 +109,12 @@ namespace GraphQlClient.Core
 			string result = "";
 			do{
 				r = await cws.ReceiveAsync(buf, CancellationToken.None);
-				result += Encoding.UTF8.GetString(buf.Array ?? throw new ApplicationException("Buf = null"), buf.Offset, r.Count);
+				result += Encoding.UTF8.GetString(buf.Array ?? throw new ApplicationException("Buf = null"), buf.Offset,
+					r.Count);
 			} while (!r.EndOfMessage);
-			
+
+			if (String.IsNullOrEmpty(result))
+				return "no result";
 			JObject obj = new JObject();
 			try{
 				obj = JObject.Parse(result);
@@ -116,33 +125,60 @@ namespace GraphQlClient.Core
 
 			string subType = (string) obj["type"];
 			switch (subType){
-				case "init_success":{
+				case "init_success":
+				{
 					Debug.Log("init_success, the handshake is complete");
 					break;
 				}
-				case "init_fail": {
+				case "connection_ack":
+				{
+					Debug.Log("init_success, the handshake is complete");
+					break;
+				}
+				case "init_fail":
+				{
 					throw new ApplicationException("The handshake failed. Error: " + result);
 				}
-				case "subscription_data":{
-					Debug.Log("subscription data has been received");
+				case "connection_error":
+				{
+					throw new ApplicationException("The handshake failed. Error: " + result);
+				}
+				case "data":
+				{
 					return result;
 				}
-				case "subscription_success":{
-					Debug.Log("subscription_success");
+				case "ka":
+				{
 					result = await GetWsReturn();
 					break;
 				}
-				case "subscription_fail": {
+				case "subscription_fail":
+				{
 					throw new ApplicationException("The subscription data failed");
 				}
+				
 			}
 			return result;
 		}
 
-		public async Task WebsocketDisconnect(){
+		public static async Task WebsocketDisconnect(string id = null){
+			string currentId = String.IsNullOrEmpty(id) ? "1" : id;
+			string jsonData = $"{{\"type\":\"stop\",\"id\":\"{currentId}\"}}";
+			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.ASCII.GetBytes(jsonData));
+			await cws.SendAsync(b, WebSocketMessageType.Text, true, CancellationToken.None);
 			await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
 		}
 		
+		#endregion
+
+		#region Utility
+
+		public static string FormatJson(string json)
+        {
+            dynamic parsedJson = JsonConvert.DeserializeObject(json);
+            return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
+        }
+
 		#endregion
 	}
 }

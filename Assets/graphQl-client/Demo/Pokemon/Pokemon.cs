@@ -18,7 +18,7 @@ public class Pokemon : MonoBehaviour
         string args = GraphApi.JsonToArgument(json);
         query.SetArgs(args);
         UnityWebRequest request = await pokemonGraph.Post(query);
-        displayText.text = request.downloadHandler.text;
+        displayText.text = HttpHandler.FormatJson(request.downloadHandler.text);
     }
 
     public async void GetAllPokemonDetails(){
@@ -27,6 +27,6 @@ public class Pokemon : MonoBehaviour
         string args = GraphApi.JsonToArgument(jsonInput);
         query.SetArgs(args);
         UnityWebRequest request = await pokemonGraph.Post(query);
-        displayText.text = request.downloadHandler.text;
+        displayText.text = HttpHandler.FormatJson(request.downloadHandler.text);
     }
 }

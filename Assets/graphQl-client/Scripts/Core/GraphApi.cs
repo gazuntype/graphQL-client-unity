@@ -31,8 +31,10 @@ namespace GraphQlClient.Core
         private string queryEndpoint;
         private string mutationEndpoint;
         private string subscriptionEndpoint;
-
+        
         private UnityWebRequest request;
+
+        public bool loading;
         public Query GetQueryByName(string queryName, Query.Type type){
             List<Query> querySearch;
             switch (type){
@@ -53,6 +55,8 @@ namespace GraphQlClient.Core
         }
 
         public async Task<UnityWebRequest> Post(Query query, string authToken = null){
+            if (String.IsNullOrEmpty(query.query))
+                query.CompleteQuery();
             return await HttpHandler.PostAsync(url, query.query, authToken);
         }
 
@@ -62,6 +66,8 @@ namespace GraphQlClient.Core
         }
 
         public async Task Subscribe(Query query){
+            if (String.IsNullOrEmpty(query.query))
+                query.CompleteQuery();
             await HttpHandler.WebsocketConnect(url, query.query);
         }
 
@@ -69,6 +75,7 @@ namespace GraphQlClient.Core
             Query query = GetQueryByName(queryName, type); 
             await Subscribe(query);
         }
+        
 
         #region Utility
 
@@ -102,6 +109,7 @@ namespace GraphQlClient.Core
         
         //Todo: Put schema file in proper location
         public async void Introspect(){
+            loading = true;
             request = await HttpHandler.PostAsync(url, Introspection.schemaIntrospectionQuery);
             EditorApplication.update += HandleIntrospection;
         }
@@ -119,6 +127,7 @@ namespace GraphQlClient.Core
                 mutationEndpoint = schemaClass.data.__schema.mutationType.name;
             if (schemaClass.data.__schema.subscriptionType != null)
                 subscriptionEndpoint = schemaClass.data.__schema.subscriptionType.name;
+            loading = false;
         }
 
         public void GetSchema(){
@@ -167,7 +176,7 @@ namespace GraphQlClient.Core
                 Debug.Log("No mutations");
                 return;
             }
-            for (int i = 1; i < mutationType.fields.Count; i++){
+            for (int i = 0; i < mutationType.fields.Count; i++){
                 mutation.queryOptions.Add(mutationType.fields[i].name);
             }
 
@@ -185,7 +194,7 @@ namespace GraphQlClient.Core
                 Debug.Log("No subscriptions");
                 return;
             }
-            for (int i = 1; i < subscriptionType.fields.Count; i++){
+            for (int i = 0; i < subscriptionType.fields.Count; i++){
                 subscription.queryOptions.Add(subscriptionType.fields[i].name);
             }
 
@@ -382,8 +391,23 @@ namespace GraphQlClient.Core
                 }
 
                 string arg = String.IsNullOrEmpty(args) ? "" : $"({args})";
+                string word;
+                switch (type){
+                    case Type.Query:
+                        word = "query";
+                        break;
+                    case Type.Mutation:
+                        word = "mutation";
+                        break;
+                    case Type.Subscription:
+                        word = "subscription";
+                        break;
+                    default:
+                        word = "query";
+                        break;
+                }
                 query =
-                    $"query {name}{{\n{GenerateStringTabs(1)}{queryString}{arg}{{{data}\n{GenerateStringTabs(1)}}}\n}}";
+                    $"{word} {name}{{\n{GenerateStringTabs(1)}{queryString}{arg}{{{data}\n{GenerateStringTabs(1)}}}\n}}";
             }
 
             private string GenerateStringTabs(int number){

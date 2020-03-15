@@ -29,6 +29,10 @@ namespace GraphQlClient.Editor
                 graph.Introspect();
             }
 
+            if (graph.loading){
+                EditorGUILayout.LabelField("API is being introspected. Please wait...");
+            }
+
             EditorGUILayout.Space();
             EditorGUILayout.Space();
             if (graph.schemaClass == null){
