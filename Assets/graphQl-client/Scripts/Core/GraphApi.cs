@@ -13,7 +13,7 @@ using UnityEngine.Networking;
 
 namespace GraphQlClient.Core
 {
-    [CreateAssetMenu(fileName = "GraphApi", menuName = "GraphQlClient/Core/GraphApi")]
+    [CreateAssetMenu(fileName = "Api Reference", menuName = "GraphQlClient/Api Reference")]
     public class GraphApi : ScriptableObject
     {
         public string url;
