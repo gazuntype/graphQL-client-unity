@@ -176,7 +176,7 @@ namespace GraphQlClient.Core
 
 		public static string FormatJson(string json)
         {
-            dynamic parsedJson = JsonConvert.DeserializeObject(json);
+            var parsedJson = JsonConvert.DeserializeObject(json);
             return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
         }
 
