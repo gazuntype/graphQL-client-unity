@@ -1,4 +1,6 @@
-﻿using GraphQlClient.Core;
+﻿using System;
+using GraphQlClient.Core;
+using GraphQlClient.EventCallbacks;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -18,11 +20,18 @@ public class User : MonoBehaviour
     public InputField id;
     public InputField username;
     public Text mutationDisplay;
-
-    private bool subscribed;
+    
     
     [Header("Subscription")]
     public Text subscriptionDisplay;
+
+    private void OnEnable(){
+        OnSubscriptionDataReceived.RegisterListener(DisplayData);
+    }
+
+    private void OnDisable(){
+        OnSubscriptionDataReceived.UnregisterListener(DisplayData);
+    }
 
     public async void GetQuery(){
         loading.SetActive(true);
@@ -41,19 +50,17 @@ public class User : MonoBehaviour
         mutationDisplay.text = HttpHandler.FormatJson(request.downloadHandler.text);
     }
 
-    public async void Subscribe(){
+    public void Subscribe(){
         loading.SetActive(true);
-        subscribed = true;
-        await userApi.Subscribe("SubscribeToUsers", GraphApi.Query.Type.Subscription);
+        userApi.Subscribe("SubscribeToUsers", GraphApi.Query.Type.Subscription);
         loading.SetActive(false);
-        while (subscribed){
-            string data = await HttpHandler.GetWsReturn();
-            subscriptionDisplay.text = HttpHandler.FormatJson(data);
-        }
+    }
+
+    public void DisplayData(OnSubscriptionDataReceived subscriptionDataReceived){
+        subscriptionDisplay.text = HttpHandler.FormatJson(subscriptionDataReceived.data);
     }
 
     public async void CancelSubscribe(){
-        subscribed = false;
         await HttpHandler.WebsocketDisconnect();
     }
 }

@@ -65,15 +65,15 @@ namespace GraphQlClient.Core
             return await Post(query, authToken);
         }
 
-        public async Task Subscribe(Query query){
+        public async void Subscribe(Query query){
             if (String.IsNullOrEmpty(query.query))
                 query.CompleteQuery();
             await HttpHandler.WebsocketConnect(url, query.query);
         }
 
-        public async Task Subscribe(string queryName, Query.Type type){
+        public void Subscribe(string queryName, Query.Type type){
             Query query = GetQueryByName(queryName, type); 
-            await Subscribe(query);
+            Subscribe(query);
         }
         
 

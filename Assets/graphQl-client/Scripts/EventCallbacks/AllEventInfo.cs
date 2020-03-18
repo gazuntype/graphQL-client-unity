@@ -27,5 +27,22 @@ namespace GraphQlClient.EventCallbacks
         }
     }
 
+    public class OnSubscriptionHandshakeComplete : Event<OnSubscriptionHandshakeComplete>
+    {
+
+        public OnSubscriptionHandshakeComplete(){
+            
+        }
+    }
+
+    public class OnSubscriptionDataReceived : Event<OnSubscriptionDataReceived>
+    {
+        public string data;
+
+        public OnSubscriptionDataReceived(string data){
+            this.data = data;
+        }
+    }
+
     #endregion
 }

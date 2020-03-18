@@ -93,17 +93,17 @@ namespace GraphQlClient.Core
 			string jsonData = "{\"type\":\"connection_init\"}";
 			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.ASCII.GetBytes(jsonData));
 			await cws.SendAsync(b, WebSocketMessageType.Text, true, CancellationToken.None);
-			await GetWsReturn();
+			GetWsReturn();
 		}
 		
 		static async Task WebsocketSend(string id, string details){
-			string jsonData = JsonConvert.SerializeObject(new {id = $"\"id\"",  type = "start", payload = new{query = details}});
+			string jsonData = JsonConvert.SerializeObject(new {id = $"{id}",  type = "start", payload = new{query = details}});
 			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.ASCII.GetBytes(jsonData));
 			await cws.SendAsync(b, WebSocketMessageType.Text, true, CancellationToken.None);
 		}
 		
 		//Call GetWsReturn to wait for a message from a websocket. GetWsReturn has to be called for each message
-		public static async Task<string> GetWsReturn(){
+		public static async void GetWsReturn(){
 			buf = WebSocket.CreateClientBuffer(1024, 1024);
 			WebSocketReceiveResult r;
 			string result = "";
@@ -114,7 +114,7 @@ namespace GraphQlClient.Core
 			} while (!r.EndOfMessage);
 
 			if (String.IsNullOrEmpty(result))
-				return "no result";
+				return;
 			JObject obj = new JObject();
 			try{
 				obj = JObject.Parse(result);
@@ -125,14 +125,13 @@ namespace GraphQlClient.Core
 
 			string subType = (string) obj["type"];
 			switch (subType){
-				case "init_success":
-				{
-					Debug.Log("init_success, the handshake is complete");
-					break;
-				}
 				case "connection_ack":
 				{
 					Debug.Log("init_success, the handshake is complete");
+					OnSubscriptionHandshakeComplete subscriptionHandshakeComplete =
+						new OnSubscriptionHandshakeComplete();
+					subscriptionHandshakeComplete.FireEvent();
+					GetWsReturn();
 					break;
 				}
 				case "init_fail":
@@ -145,11 +144,14 @@ namespace GraphQlClient.Core
 				}
 				case "data":
 				{
-					return result;
+					OnSubscriptionDataReceived subscriptionDataReceived = new OnSubscriptionDataReceived(result);
+					subscriptionDataReceived.FireEvent();
+					GetWsReturn();
+					break;
 				}
 				case "ka":
 				{
-					result = await GetWsReturn();
+					GetWsReturn();
 					break;
 				}
 				case "subscription_fail":
@@ -158,7 +160,6 @@ namespace GraphQlClient.Core
 				}
 				
 			}
-			return result;
 		}
 
 		public static async Task WebsocketDisconnect(string id = null){
