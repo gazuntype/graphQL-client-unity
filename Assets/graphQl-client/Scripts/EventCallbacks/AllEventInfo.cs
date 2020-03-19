@@ -44,5 +44,12 @@ namespace GraphQlClient.EventCallbacks
         }
     }
 
+    public class OnSubscriptionCanceled : Event<OnSubscriptionCanceled>
+    {
+        public OnSubscriptionCanceled(){
+            
+        }
+    }
+
     #endregion
 }

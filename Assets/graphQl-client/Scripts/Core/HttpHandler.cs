@@ -66,14 +66,11 @@ namespace GraphQlClient.Core
         #region Websocket
 
         //Use this to subscribe to a graphql endpoint
-		public static async Task WebsocketConnect(string subscriptionUrl, string details, string socketId = null, string protocol = null, string authToken = null){
+		public static async Task WebsocketConnect(string subscriptionUrl, string details, string authToken = null, string socketId = "1", string protocol = "graphql-ws"){
 			string subUrl = subscriptionUrl.Replace("http", "ws");
-			string id = String.IsNullOrEmpty(socketId) ? "1" : socketId;
+			string id = socketId;
 			cws = new ClientWebSocket();
-			if (String.IsNullOrEmpty(protocol))
-				cws.Options.AddSubProtocol("graphql-ws");
-			else 
-				cws.Options.AddSubProtocol(protocol);
+			cws.Options.AddSubProtocol(protocol);
 			if (!String.IsNullOrEmpty(authToken))
 				cws.Options.SetRequestHeader("Authorization", "Bearer " + authToken);
 			Uri u = new Uri(subUrl);
@@ -162,12 +159,13 @@ namespace GraphQlClient.Core
 			}
 		}
 
-		public static async Task WebsocketDisconnect(string id = null){
-			string currentId = String.IsNullOrEmpty(id) ? "1" : id;
-			string jsonData = $"{{\"type\":\"stop\",\"id\":\"{currentId}\"}}";
+		public static async Task WebsocketDisconnect(string socketId = "1"){
+			string jsonData = $"{{\"type\":\"stop\",\"id\":\"{socketId}\"}}";
 			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.ASCII.GetBytes(jsonData));
 			await cws.SendAsync(b, WebSocketMessageType.Text, true, CancellationToken.None);
 			await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
+			OnSubscriptionCanceled subscriptionCanceled = new OnSubscriptionCanceled();
+			subscriptionCanceled.FireEvent();
 		}
 		
 		#endregion

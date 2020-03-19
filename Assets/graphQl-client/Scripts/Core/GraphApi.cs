@@ -65,15 +65,19 @@ namespace GraphQlClient.Core
             return await Post(query, authToken);
         }
 
-        public async void Subscribe(Query query){
+        public async void Subscribe(Query query,string authToken = null, string socketId = "1", string protocol = "graphql-ws"){
             if (String.IsNullOrEmpty(query.query))
                 query.CompleteQuery();
-            await HttpHandler.WebsocketConnect(url, query.query);
+            await HttpHandler.WebsocketConnect(url, query.query, authToken, socketId, protocol);
         }
 
-        public void Subscribe(string queryName, Query.Type type){
-            Query query = GetQueryByName(queryName, type); 
-            Subscribe(query);
+        public void Subscribe(string queryName, Query.Type type, string authToken = null, string socketId = "1", string protocol = "graphql-ws"){
+            Query query = GetQueryByName(queryName, type);
+            Subscribe(query, authToken, socketId, protocol);
+        }
+
+        public async void CancelSubscription(string socketId = "1"){
+            await HttpHandler.WebsocketDisconnect(socketId);
         }
         
 

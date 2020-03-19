@@ -60,7 +60,7 @@ public class User : MonoBehaviour
         subscriptionDisplay.text = HttpHandler.FormatJson(subscriptionDataReceived.data);
     }
 
-    public async void CancelSubscribe(){
-        await HttpHandler.WebsocketDisconnect();
+    public void CancelSubscribe(){
+        userApi.CancelSubscription();
     }
 }
