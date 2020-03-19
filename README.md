@@ -10,7 +10,7 @@ The client also utilizes different Events that can be subscribed to by any funct
 
 ## How to use
 ### Import UnityPackage
-Download the ![``.unitypackage``](UnityPackages/graphQL-client-unity-v2.unitypackage) file and import it into your Unity project.
+Download the [unitypackage](UnityPackages) file and import it into your Unity project.
 
 ### Create an API Reference
 An API reference is a [Scriptable Object](https://docs.unity3d.com/Manual/class-ScriptableObject.html) that stores all the data relating to an API. For instance, if the API we intend to query is the [Pokemon GraphQl API](https://graphql-pokemon.now.sh/), within Unity, we would create an API Reference and point it to the url of the Pokemon GraphQl API. This API Reference will contain all the queries, mutations and subscriptions we wish to make pertaining to the Pokemon GraphQl API.
