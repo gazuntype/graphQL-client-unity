@@ -2,11 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
-using GraphQlClient.Core;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -28,6 +25,8 @@ namespace GraphQlClient.Core
         
         public Introspection.SchemaClass schemaClass;
 
+        private string authToken;
+        
         private string queryEndpoint;
         private string mutationEndpoint;
         private string subscriptionEndpoint;
@@ -35,6 +34,10 @@ namespace GraphQlClient.Core
         private UnityWebRequest request;
 
         public bool loading;
+
+        public void SetAuthToken(string auth){
+            authToken = auth;
+        }
         public Query GetQueryByName(string queryName, Query.Type type){
             List<Query> querySearch;
             switch (type){
@@ -54,26 +57,26 @@ namespace GraphQlClient.Core
             return querySearch.Find(aQuery => aQuery.name == queryName);
         }
 
-        public async Task<UnityWebRequest> Post(Query query, string authToken = null){
+        public async Task<UnityWebRequest> Post(Query query){
             if (String.IsNullOrEmpty(query.query))
                 query.CompleteQuery();
             return await HttpHandler.PostAsync(url, query.query, authToken);
         }
 
-        public async Task<UnityWebRequest> Post(string queryName, Query.Type type, string authToken = null){
+        public async Task<UnityWebRequest> Post(string queryName, Query.Type type){
             Query query = GetQueryByName(queryName, type);
-            return await Post(query, authToken);
+            return await Post(query);
         }
 
-        public async void Subscribe(Query query,string authToken = null, string socketId = "1", string protocol = "graphql-ws"){
+        public async void Subscribe(Query query, string socketId = "1", string protocol = "graphql-ws"){
             if (String.IsNullOrEmpty(query.query))
                 query.CompleteQuery();
             await HttpHandler.WebsocketConnect(url, query.query, authToken, socketId, protocol);
         }
 
-        public void Subscribe(string queryName, Query.Type type, string authToken = null, string socketId = "1", string protocol = "graphql-ws"){
+        public void Subscribe(string queryName, Query.Type type, string socketId = "1", string protocol = "graphql-ws"){
             Query query = GetQueryByName(queryName, type);
-            Subscribe(query, authToken, socketId, protocol);
+            Subscribe(query, socketId, protocol);
         }
 
         public async void CancelSubscription(string socketId = "1"){
@@ -83,7 +86,7 @@ namespace GraphQlClient.Core
 
         #region Utility
 
-        public static string JsonToArgument(string jsonInput){
+        private static string JsonToArgument(string jsonInput){
             char[] jsonChar = jsonInput.ToCharArray();
             List<int> indexes = new List<int>();
             jsonChar[0] = ' ';
@@ -326,8 +329,9 @@ namespace GraphQlClient.Core
                 Mutation,
                 Subscription
             }
-            public void SetArgs(string args){
-                this.args = args;
+            public void SetArgs(object inputObject){
+                string json = JsonConvert.SerializeObject(inputObject);
+                args = JsonToArgument(json);
                 CompleteQuery();
             }
 

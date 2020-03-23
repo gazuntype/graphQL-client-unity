@@ -1,5 +1,4 @@
-﻿using System;
-using GraphQlClient.Core;
+﻿using GraphQlClient.Core;
 using GraphQlClient.EventCallbacks;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -43,8 +42,7 @@ public class User : MonoBehaviour
     public async void CreateNewUser(){
         loading.SetActive(true);
         GraphApi.Query query = userApi.GetQueryByName("CreateNewUser", GraphApi.Query.Type.Mutation);
-        string jsonArgs = JsonConvert.SerializeObject(new{objects = new{id = id.text, name = username.text}});
-        query.SetArgs(GraphApi.JsonToArgument(jsonArgs));
+        query.SetArgs(new{objects = new{id = id.text, name = username.text}});
         UnityWebRequest request = await userApi.Post(query);
         loading.SetActive(false);
         mutationDisplay.text = HttpHandler.FormatJson(request.downloadHandler.text);
