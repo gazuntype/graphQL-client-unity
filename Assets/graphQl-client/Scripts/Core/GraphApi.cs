@@ -110,7 +110,7 @@ namespace GraphQlClient.Core
 
         #endregion
 
-
+#if UNITY_EDITOR
 
         #region Editor Use
         
@@ -307,7 +307,8 @@ namespace GraphQlClient.Core
 
         #endregion
         
-
+#endif
+        
         #region Classes
 
         [Serializable]
