@@ -1,6 +1,5 @@
 ﻿using GraphQlClient.Core;
 using GraphQlClient.EventCallbacks;
-using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
