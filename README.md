@@ -81,6 +81,7 @@ A subscription is created the same way as a query or a mutation. The only differ
 ``protocol`` is the sub protocol string used. The default value is ``graphql-ws``.
 Each time the websocket receives data, an event ``OnSubscriptionDataReceived`` is called and this can be subscribed to to do anything. ``OnSubscriptionDataReceived`` has a variable ``data`` which contains the data received.
 An example is shown below that logs any data received from the subscription.
+
 ```C#
 private void OnEnable(){
         OnSubscriptionDataReceived.RegisterListener(DisplayData);
@@ -93,6 +94,40 @@ private void OnDisable(){
 public void DisplayData(OnSubscriptionDataReceived subscriptionDataReceived){
         Debug.Log(subscriptionDataReceived.data);
 }
-
-
 ```
+
+### Events
+For easy use, a couple of events have been created that can be subscribed to by functions. These events are called when specific things happen. A list of events created for the graphql-client are shown below. An Event can also contain some data relating to the event.
+* ``OnRequestBegin``: This is called immediately a HTTP request is made. 
+* ``OnRequestEnded``: This is called when data from a HTTP request is gotten from the server. It contains the following variables:
+	*``bool success``: This is true if the request was a success and false if there was an error.
+	*``string data``: If ``bool success`` is ``true`` and the request succeeded, the data variable contains the data gotten from the request. If the request failed, the data variable is null.
+	*``Exception exception``: If ``bool success`` is ``false``, the request failed and the Exception called is passed into the ``exception`` variable.
+* ``OnSubscriptionHandshakeComplete``: This is called when the protocol for the subscription is conducted successful and the handshake has been achieved.
+* ``OnSubscriptionDataReceived``: This is called when data is gotten from a subscription. It contains the following variables:
+	*``string data``: the data variable contains the data gotten from the subscription.
+* ``OnSubscriptionCanceled``: This is called when a subscription has been successfully cancelled.
+
+You can subscribe to these events by simply calling ``RegisterListener`` and you can unsubscribe by calling ``UnregisterListener``.
+Here's an example where the ``OnRequestEnded`` event is used to get data from a request made.
+
+```C#
+private void OnEnable(){
+        OnRequestEnded.RegisterListener(DisplayData);
+}
+
+private void OnDisable(){
+        OnRequestEnded.UnregisterListener(DisplayData);
+}
+
+public void DisplayData(OnRequestEnded dataReceived){
+        if (dataReceived.success){
+		Debug.Log(dataReceived.data);
+	}
+	else{
+		throw dataReceived.exception;
+	}
+}
+```
+**NOTE**: The function that subscribes to an Event must contain the Event class as an argument. Notice above with 
+``public void DisplayData(OnRequestEnded dataReceived)``
