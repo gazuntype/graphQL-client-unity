@@ -51,27 +51,15 @@ string data = request.downloadHandler.text;
 This data is in JSON format and can easily be parsed using a tool like Unity's in-built [JsonUtility class](https://docs.unity3d.com/ScriptReference/JsonUtility.html) or third party JSON parsers like [JSON. Net For Unity](https://assetstore.unity.com/packages/tools/input-management/json-net-for-unity-11347)
 
 ### Setting Query Input
-Due to the dynamic nature of query inputs, you cannot set them within the editor. For this purpose, each query has an ``args`` variable. This variable is a string and can be set directly.
-
-```C#
-public void SetQueryArgs(){
-	GraphApi.Query getPokemons = pokemonReference.GetQueryByName("GetAllPokemon", GraphApi.Query.Type.Query);
-	string input = "first: 100"
-        getPokemons.SetArgs(input);
-}
-```
-This method of setting input is not ideal and can get confusing when dealing with input objects that are deeply nested. To solve this, graphQl-client-unity contains a static helper function ``GraphApi.JsonToArgument(string json)`` which converts a JSON string into an input object. An example of a mutation that creates a new user depending on the name and id provided is shown below.
+Due to the dynamic nature of query inputs, you cannot set them within the editor. Therefore input objects have to be created and the function ``Query.SetArgs(object input)`` is used to set the argument of that query.
 
 ```C#
 public async void CreateNewUser(){
 	//Gets the needed query from the Api Reference
         GraphApi.Query createUser = userApi.GetQueryByName("CreateNewUser", GraphApi.Query.Type.Mutation);
 	
-	//Serializes the input object into JSON
-        string jsonArgs = JsonConvert.SerializeObject(new{objects = new{id = "idGiven", name = "nameGiven"}});
-	
 	//Converts the JSON object to an argument string and sets the queries argument
-        createUser.SetArgs(GraphApi.JsonToArgument(jsonArgs));
+        createUser.SetArgs(new{objects = new{id = "idGiven", name = "nameGiven"}});
 	
 	//Performs Post request to server
         UnityWebRequest request = await userApi.Post(createUser);
@@ -79,16 +67,13 @@ public async void CreateNewUser(){
 ```
 Of course ``idGiven`` and ``nameGiven`` can be changed to any string.
 
-**NOTE**: The input object that is serialized into a JSON must be just like the input object in the APIs schema.
+**NOTE**: The input object must be just like the input object in the APIs schema.
 For the example above, the query expected an input in this form ``insert_users(objects: {id: string, name: string})`` where ``insert_user`` is the query name.  
 
 
 
 ### Authentication/Authorization
-The non-static ``GraphApi.Post`` function has an overload that allows you to input a token. This token will be set as the Authorization header of the request and can be used for authentication purposes.
-```C#
-UnityWebRequest request = await userApi.Post(createUser, authToken);
-```
+For authentication and authorization, the API reference has a function called ``GraphApi.SetAuthToken(string auth)`` which sets the Authorization header of all request made with that API reference.
 
 ### Subscriptions
 A subscription is created the same way as a query or a mutation. The only difference is instead of  calling ``Post``, you call ``Subscribe``. The ``Subscribe`` functions does a lot of things under the hood like connecting websockets, observing the proper protocol and completing the handshake. While subscribed, you will continue to receive data from the server until you call ``CancelSubscription``. The ``Subscribe`` function can take in a couple of arguments.
