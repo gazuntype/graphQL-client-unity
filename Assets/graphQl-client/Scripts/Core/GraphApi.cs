@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Utilities;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -331,10 +333,12 @@ namespace GraphQlClient.Core
                 Subscription
             }
             public void SetArgs(object inputObject){
-                string json = JsonConvert.SerializeObject(inputObject);
+                string json = JsonConvert.SerializeObject(inputObject, new EnumInputConverter());
                 args = JsonToArgument(json);
                 CompleteQuery();
             }
+            
+            
 
             public void CompleteQuery(){
                 isComplete = true;
@@ -491,5 +495,21 @@ namespace GraphQlClient.Core
         }
 
         #endregion
+    }
+
+
+
+    public class EnumInputConverter : StringEnumConverter
+    {
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer){
+            if (value == null){
+                writer.WriteNull();
+            }
+            else{
+                Enum @enum = (Enum) value;
+                string enumText = @enum.ToString("G");
+                writer.WriteRawValue(enumText);
+            }
+        }
     }
 }
