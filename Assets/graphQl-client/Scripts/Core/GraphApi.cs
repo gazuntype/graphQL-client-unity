@@ -337,6 +337,11 @@ namespace GraphQlClient.Core
                 args = JsonToArgument(json);
                 CompleteQuery();
             }
+
+            public void SetArgs(string inputString){
+                args = inputString;
+                CompleteQuery();
+            }
             
             
 
