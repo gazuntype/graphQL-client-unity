@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -70,19 +71,19 @@ namespace GraphQlClient.Core
             return await Post(query);
         }
 
-        public async void Subscribe(Query query, string socketId = "1", string protocol = "graphql-ws"){
+        public async Task<ClientWebSocket> Subscribe(Query query, string socketId = "1", string protocol = "graphql-ws"){
             if (String.IsNullOrEmpty(query.query))
                 query.CompleteQuery();
-            await HttpHandler.WebsocketConnect(url, query.query, authToken, socketId, protocol);
+            return await HttpHandler.WebsocketConnect(url, query.query, authToken, socketId, protocol);
         }
 
-        public void Subscribe(string queryName, Query.Type type, string socketId = "1", string protocol = "graphql-ws"){
+        public async Task<ClientWebSocket> Subscribe(string queryName, Query.Type type, string socketId = "1", string protocol = "graphql-ws"){
             Query query = GetQueryByName(queryName, type);
-            Subscribe(query, socketId, protocol);
+            return await Subscribe(query, socketId, protocol);
         }
 
-        public async void CancelSubscription(string socketId = "1"){
-            await HttpHandler.WebsocketDisconnect(socketId);
+        public async void CancelSubscription(ClientWebSocket cws, string socketId = "1"){
+            await HttpHandler.WebsocketDisconnect(cws, socketId);
         }
         
 

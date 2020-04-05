@@ -13,8 +13,7 @@ namespace GraphQlClient.Core
 {
 	public class HttpHandler
 	{
-		static ClientWebSocket cws = null;
-		static ArraySegment<byte> buf = new ArraySegment<byte>(new byte[1024]);
+		
 		
 		public static async Task<UnityWebRequest> PostAsync(string url, string details, string authToken = null){
             string jsonData = JsonConvert.SerializeObject(new{query = details});
@@ -66,7 +65,8 @@ namespace GraphQlClient.Core
         #region Websocket
 
         //Use this to subscribe to a graphql endpoint
-		public static async Task WebsocketConnect(string subscriptionUrl, string details, string authToken = null, string socketId = "1", string protocol = "graphql-ws"){
+		public static async Task<ClientWebSocket> WebsocketConnect(string subscriptionUrl, string details, string authToken = null, string socketId = "1", string protocol = "graphql-ws"){
+			ClientWebSocket cws;
 			string subUrl = subscriptionUrl.Replace("http", "ws");
 			string id = socketId;
 			cws = new ClientWebSocket();
@@ -78,29 +78,32 @@ namespace GraphQlClient.Core
 				await cws.ConnectAsync(u, CancellationToken.None);
 				if (cws.State == WebSocketState.Open)
 					Debug.Log("connected");
-				await WebsocketInit();
-				await WebsocketSend(id, details);
+				await WebsocketInit(cws);
+				await WebsocketSend(cws, id, details);
 			}
 			catch (Exception e){
 				Debug.Log("woe " + e.Message);
 			}
+
+			return cws;
 		}
 
-		static async Task WebsocketInit(){
+		static async Task WebsocketInit(ClientWebSocket cws){
 			string jsonData = "{\"type\":\"connection_init\"}";
 			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.ASCII.GetBytes(jsonData));
 			await cws.SendAsync(b, WebSocketMessageType.Text, true, CancellationToken.None);
-			GetWsReturn();
+			GetWsReturn(cws);
 		}
 		
-		static async Task WebsocketSend(string id, string details){
+		static async Task WebsocketSend(ClientWebSocket cws, string id, string details){
 			string jsonData = JsonConvert.SerializeObject(new {id = $"{id}",  type = "start", payload = new{query = details}});
 			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.ASCII.GetBytes(jsonData));
 			await cws.SendAsync(b, WebSocketMessageType.Text, true, CancellationToken.None);
 		}
 		
 		//Call GetWsReturn to wait for a message from a websocket. GetWsReturn has to be called for each message
-		public static async void GetWsReturn(){
+		static async void GetWsReturn(ClientWebSocket cws){
+			ArraySegment<byte> buf = new ArraySegment<byte>(new byte[1024]);
 			buf = WebSocket.CreateClientBuffer(1024, 1024);
 			WebSocketReceiveResult r;
 			string result = "";
@@ -128,7 +131,7 @@ namespace GraphQlClient.Core
 					OnSubscriptionHandshakeComplete subscriptionHandshakeComplete =
 						new OnSubscriptionHandshakeComplete();
 					subscriptionHandshakeComplete.FireEvent();
-					GetWsReturn();
+					GetWsReturn(cws);
 					break;
 				}
 				case "init_fail":
@@ -143,12 +146,12 @@ namespace GraphQlClient.Core
 				{
 					OnSubscriptionDataReceived subscriptionDataReceived = new OnSubscriptionDataReceived(result);
 					subscriptionDataReceived.FireEvent();
-					GetWsReturn();
+					GetWsReturn(cws);
 					break;
 				}
 				case "ka":
 				{
-					GetWsReturn();
+					GetWsReturn(cws);
 					break;
 				}
 				case "subscription_fail":
@@ -159,7 +162,7 @@ namespace GraphQlClient.Core
 			}
 		}
 
-		public static async Task WebsocketDisconnect(string socketId = "1"){
+		public static async Task WebsocketDisconnect(ClientWebSocket cws, string socketId = "1"){
 			string jsonData = $"{{\"type\":\"stop\",\"id\":\"{socketId}\"}}";
 			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.ASCII.GetBytes(jsonData));
 			await cws.SendAsync(b, WebSocketMessageType.Text, true, CancellationToken.None);

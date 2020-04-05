@@ -1,4 +1,5 @@
-﻿using GraphQlClient.Core;
+﻿using System.Net.WebSockets;
+using GraphQlClient.Core;
 using GraphQlClient.EventCallbacks;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -23,6 +24,8 @@ public class User : MonoBehaviour
     [Header("Subscription")]
     public Text subscriptionDisplay;
 
+    private ClientWebSocket cws;
+    
     private void OnEnable(){
         OnSubscriptionDataReceived.RegisterListener(DisplayData);
     }
@@ -47,17 +50,18 @@ public class User : MonoBehaviour
         mutationDisplay.text = HttpHandler.FormatJson(request.downloadHandler.text);
     }
 
-    public void Subscribe(){
+    public async void Subscribe(){
         loading.SetActive(true);
-        userApi.Subscribe("SubscribeToUsers", GraphApi.Query.Type.Subscription);
+        cws = await userApi.Subscribe("SubscribeToUsers", GraphApi.Query.Type.Subscription, "default");
         loading.SetActive(false);
     }
 
     public void DisplayData(OnSubscriptionDataReceived subscriptionDataReceived){
+        Debug.Log("I was called");
         subscriptionDisplay.text = HttpHandler.FormatJson(subscriptionDataReceived.data);
     }
 
     public void CancelSubscribe(){
-        userApi.CancelSubscription();
+        userApi.CancelSubscription(cws);
     }
 }
