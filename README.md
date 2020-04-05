@@ -67,6 +67,8 @@ public async void CreateNewUser(){
 ```
 Of course ``idGiven`` and ``nameGiven`` can be changed to any string.
 
+Alternatively, you can use the overload function ``Query.SetArgs(string inputString)`` to set the input directly.
+
 **NOTE**: The input object must be just like the input object in the APIs schema.
 For the example above, the query expected an input in this form ``insert_users(objects: {id: string, name: string})`` where ``insert_user`` is the query name.  
 
