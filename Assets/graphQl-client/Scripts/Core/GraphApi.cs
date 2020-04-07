@@ -120,7 +120,7 @@ namespace GraphQlClient.Core
         //Todo: Put schema file in proper location
         public async void Introspect(){
             loading = true;
-            request = await HttpHandler.PostAsync(url, Introspection.schemaIntrospectionQuery);
+            request = await HttpHandler.PostAsync(url, Introspection.schemaIntrospectionQuery, authToken);
             EditorApplication.update += HandleIntrospection;
         }
 
