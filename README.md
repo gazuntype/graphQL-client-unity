@@ -81,6 +81,7 @@ For authentication and authorization, the API reference has a function called ``
 A subscription is created the same way as a query or a mutation. The only difference is instead of  calling ``Post``, you call ``Subscribe``. The ``Subscribe`` functions does a lot of things under the hood like connecting websockets, observing the proper protocol and completing the handshake. While subscribed, you will continue to receive data from the server until you call ``CancelSubscription``. The ``Subscribe`` function can take in a couple of arguments.
 ``socketId`` is the id you want to give the particular websocket. This is necessary if you want to have multiple subscriptions running at the same time.
 ``protocol`` is the sub protocol string used. The default value is ``graphql-ws``.
+The ``Subscribe`` function returns a ``ClientWebSocket`` instance. You'd need this instance if you want to cancel a subscription with ``CancelSubscription``.
 Each time the websocket receives data, an event ``OnSubscriptionDataReceived`` is called and this can be subscribed to to do anything. ``OnSubscriptionDataReceived`` has a variable ``data`` which contains the data received.
 An example is shown below that logs any data received from the subscription.
 
