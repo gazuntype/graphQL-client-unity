@@ -41,7 +41,30 @@ namespace GraphQlClient.Core
             requestSucceeded.FireEvent();
             return request;
         }
-
+		
+		public static async Task<UnityWebRequest> PostAsync(UnityWebRequest request, string details){
+			string jsonData = JsonConvert.SerializeObject(new{query = details});
+			byte[] postData = Encoding.ASCII.GetBytes(jsonData);
+			request.uploadHandler = new UploadHandlerRaw(postData);
+			OnRequestBegin  requestBegin = new OnRequestBegin();
+			requestBegin.FireEvent();
+            
+			try{
+				await request.SendWebRequest();
+			}
+			catch(Exception e){
+				Debug.Log("Testing exceptions");
+				OnRequestEnded requestFailed = new OnRequestEnded(e);
+				requestFailed.FireEvent();
+			}
+			Debug.Log(request.downloadHandler.text);
+            
+			OnRequestEnded requestSucceeded = new OnRequestEnded(request.downloadHandler.text);
+			requestSucceeded.FireEvent();
+			return request;
+		}
+		
+		
         public static async Task<UnityWebRequest> GetAsync(string url, string authToken = null){
             UnityWebRequest request = UnityWebRequest.Get(url);
             if (!String.IsNullOrEmpty(authToken)) 
@@ -66,13 +89,30 @@ namespace GraphQlClient.Core
 
         //Use this to subscribe to a graphql endpoint
 		public static async Task<ClientWebSocket> WebsocketConnect(string subscriptionUrl, string details, string authToken = null, string socketId = "1", string protocol = "graphql-ws"){
-			ClientWebSocket cws;
 			string subUrl = subscriptionUrl.Replace("http", "ws");
 			string id = socketId;
-			cws = new ClientWebSocket();
+			ClientWebSocket cws = new ClientWebSocket();
 			cws.Options.AddSubProtocol(protocol);
 			if (!String.IsNullOrEmpty(authToken))
 				cws.Options.SetRequestHeader("Authorization", "Bearer " + authToken);
+			Uri u = new Uri(subUrl);
+			try{
+				await cws.ConnectAsync(u, CancellationToken.None);
+				if (cws.State == WebSocketState.Open)
+					Debug.Log("connected");
+				await WebsocketInit(cws);
+				await WebsocketSend(cws, id, details);
+			}
+			catch (Exception e){
+				Debug.Log("woe " + e.Message);
+			}
+
+			return cws;
+		}
+		
+		public static async Task<ClientWebSocket> WebsocketConnect(ClientWebSocket cws, string subscriptionUrl, string details, string socketId = "1"){
+			string subUrl = subscriptionUrl.Replace("http", "ws");
+			string id = socketId;
 			Uri u = new Uri(subUrl);
 			try{
 				await cws.ConnectAsync(u, CancellationToken.None);
