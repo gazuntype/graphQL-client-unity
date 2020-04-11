@@ -425,8 +425,9 @@ namespace GraphQlClient.Core
                         word = "query";
                         break;
                 }
-                query =
-                    $"{word} {name}{{\n{GenerateStringTabs(1)}{queryString}{arg}{{{data}\n{GenerateStringTabs(1)}}}\n}}";
+                query = data == null
+                    ? $"{word} {name}{{\n{GenerateStringTabs(1)}{queryString}{arg}\n}}"
+                    : $"{word} {name}{{\n{GenerateStringTabs(1)}{queryString}{arg}{{{data}\n{GenerateStringTabs(1)}}}\n}}";
             }
 
             private string GenerateStringTabs(int number){
