@@ -174,7 +174,7 @@ namespace GraphQlClient.Core
 					GetWsReturn(cws);
 					break;
 				}
-				case "init_fail":
+				case "error":
 				{
 					throw new ApplicationException("The handshake failed. Error: " + result);
 				}
