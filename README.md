@@ -17,6 +17,8 @@ An API reference is a [Scriptable Object](https://docs.unity3d.com/Manual/class-
 
 To create an API Reference, simply right click in your Asset folder, go to Create -> GraphQLClient -> API Reference. This would automatically create a new API Reference. Name it appropriately, put the url endpoint of the GraphQl API and click **Introspect** to  begin creating queries.
 
+**Note**: You'll need to **Introspect** every time to make changes to your GraphQl API to fetch the current schema.
+
 ![Create an API Reference](Gifs/CreateApiReference.gif)
 
 ### Create a Query, Mutation or Subscription
