@@ -129,7 +129,7 @@ namespace GraphQlClient.Core
                 return;
             EditorApplication.update -= HandleIntrospection;
             introspection = request.downloadHandler.text;
-            File.WriteAllText(Application.dataPath + $"\\{name}schema.txt",introspection);
+            File.WriteAllText(Application.dataPath + $"{Path.DirectorySeparatorChar}{name}schema.txt",introspection);
             schemaClass = JsonConvert.DeserializeObject<Introspection.SchemaClass>(introspection);
             if (schemaClass.data.__schema.queryType != null)
                 queryEndpoint = schemaClass.data.__schema.queryType.name;
@@ -143,7 +143,7 @@ namespace GraphQlClient.Core
         public void GetSchema(){
             if (schemaClass == null){
                 try{
-                    introspection = File.ReadAllText(Application.dataPath + $"\\{name}schema.txt");
+                    introspection = File.ReadAllText(Application.dataPath + $"{Path.DirectorySeparatorChar}{name}schema.txt");
                 }
                 catch{
                     return;
