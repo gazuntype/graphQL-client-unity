@@ -66,6 +66,10 @@ namespace GraphQlClient.Core
             return await HttpHandler.PostAsync(url, query.query, authToken);
         }
 
+        public async Task<UnityWebRequest> Post(string queryString){
+            return await HttpHandler.PostAsync(url, queryString, authToken);
+        }
+
         public async Task<UnityWebRequest> Post(string queryName, Query.Type type){
             Query query = GetQueryByName(queryName, type);
             return await Post(query);
