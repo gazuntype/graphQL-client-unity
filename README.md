@@ -52,6 +52,15 @@ string data = request.downloadHandler.text;
 ```
 This data is in JSON format and can easily be parsed using a tool like Unity's in-built [JsonUtility class](https://docs.unity3d.com/ScriptReference/JsonUtility.html) or third party JSON parsers like [JSON. Net For Unity](https://assetstore.unity.com/packages/tools/input-management/json-net-for-unity-11347)
 
+**Note**: the Post function has three overloads. 
+```C#
+Post(Query query) //takes in a Query object. this can be gotten by using GetQueryByName(string queryName, Query.Type type)
+
+Post(string queryString) //takes in the query as a string input. this should be used if the query can't be formed in the editor
+
+Post(string queryName, Query.Type type) //takes in the name of the query (created in the editor) and the type of query.
+```
+
 ### Setting Query Input
 Due to the dynamic nature of query inputs, you cannot set them within the editor. Therefore input objects have to be created and the function ``Query.SetArgs(object input)`` is used to set the argument of that query.
 
