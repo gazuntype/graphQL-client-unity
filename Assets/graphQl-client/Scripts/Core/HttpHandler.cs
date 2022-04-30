@@ -15,7 +15,7 @@ namespace GraphQlClient.Core
 	{
 		
 		
-		public static async Task<UnityWebRequest> PostAsync(string url, string details, string authToken = null){
+	    public static async Task<UnityWebRequest> PostAsync(string url, string details, string authToken = null){
             string jsonData = JsonConvert.SerializeObject(new{query = details});
             byte[] postData = Encoding.ASCII.GetBytes(jsonData);
             UnityWebRequest request = UnityWebRequest.Post(url, UnityWebRequest.kHttpVerbPOST);
@@ -57,7 +57,6 @@ namespace GraphQlClient.Core
 				OnRequestEnded requestFailed = new OnRequestEnded(e);
 				requestFailed.FireEvent();
 			}
-			Debug.Log(request.downloadHandler.text);
             
 			OnRequestEnded requestSucceeded = new OnRequestEnded(request.downloadHandler.text);
 			requestSucceeded.FireEvent();
