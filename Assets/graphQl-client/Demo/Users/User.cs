@@ -36,18 +36,24 @@ public class User : MonoBehaviour
 
     public async void GetQuery(){
         loading.SetActive(true);
-        UnityWebRequest request = await userApi.Post("GetUsers", GraphApi.Query.Type.Query);
-        loading.SetActive(false);
-        queryDisplay.text = HttpHandler.FormatJson(request.downloadHandler.text);
+        using (UnityWebRequest request = await userApi.Post("GetUsers", GraphApi.Query.Type.Query))
+        {
+            loading.SetActive(false);
+            queryDisplay.text = HttpHandler.FormatJson(request.downloadHandler.text);
+            request.Dispose();
+        };
     }
 
     public async void CreateNewUser(){
         loading.SetActive(true);
         GraphApi.Query query = userApi.GetQueryByName("CreateNewUser", GraphApi.Query.Type.Mutation);
         query.SetArgs(new{objects = new{id = id.text, name = username.text}});
-        UnityWebRequest request = await userApi.Post(query);
-        loading.SetActive(false);
-        mutationDisplay.text = HttpHandler.FormatJson(request.downloadHandler.text);
+        using (UnityWebRequest request = await userApi.Post(query))
+        {
+            loading.SetActive(false);
+            mutationDisplay.text = HttpHandler.FormatJson(request.downloadHandler.text);
+            request.Dispose();
+        }
     }
 
     public async void Subscribe(){
@@ -62,6 +68,6 @@ public class User : MonoBehaviour
     }
 
     public void CancelSubscribe(){
-        userApi.CancelSubscription(cws);
+        userApi.CancelSubscription(cws, "default");
     }
 }
