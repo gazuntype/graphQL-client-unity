@@ -18,7 +18,7 @@ namespace GraphQlClient.Core
 		public static async Task<UnityWebRequest> PostAsync(string url, string details, string authToken = null){
             string jsonData = JsonConvert.SerializeObject(new{query = details});
             byte[] postData = Encoding.UTF8.GetBytes(jsonData);
-            UnityWebRequest request = UnityWebRequest.Post(url, UnityWebRequest.kHttpVerbPOST);
+            UnityWebRequest request = UnityWebRequest.Post(url, "");
             request.uploadHandler = new UploadHandlerRaw(postData);
             request.SetRequestHeader("Content-Type", "application/json");
             if (!String.IsNullOrEmpty(authToken)) 
