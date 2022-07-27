@@ -35,7 +35,8 @@ namespace GraphQlClient.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.Space();
-            if (graph.schemaClass == null){
+
+            if (graph.schemaClass?.data?.__schema == null) {
                 return;
             }
             EditorGUILayout.BeginHorizontal();

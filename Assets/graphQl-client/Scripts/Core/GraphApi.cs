@@ -129,10 +129,16 @@ namespace GraphQlClient.Core
         }
 
         void HandleIntrospection(){
+            if (request == null)
+                return;
             if (!request.isDone)
                 return;
             EditorApplication.update -= HandleIntrospection;
             introspection = request.downloadHandler.text;
+            
+            request.Dispose();
+            request = null;
+            
             File.WriteAllText(Application.dataPath + $"{Path.DirectorySeparatorChar}{name}schema.txt",introspection);
             schemaClass = JsonConvert.DeserializeObject<Introspection.SchemaClass>(introspection);
             if (schemaClass.data.__schema.queryType != null)

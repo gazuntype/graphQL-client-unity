@@ -17,8 +17,8 @@ namespace GraphQlClient.Core
 		
 		public static async Task<UnityWebRequest> PostAsync(string url, string details, string authToken = null){
             string jsonData = JsonConvert.SerializeObject(new{query = details});
-            byte[] postData = Encoding.ASCII.GetBytes(jsonData);
-            UnityWebRequest request = UnityWebRequest.Post(url, UnityWebRequest.kHttpVerbPOST);
+            byte[] postData = Encoding.UTF8.GetBytes(jsonData);
+            UnityWebRequest request = UnityWebRequest.Post(url, "");
             request.uploadHandler = new UploadHandlerRaw(postData);
             request.SetRequestHeader("Content-Type", "application/json");
             if (!String.IsNullOrEmpty(authToken)) 
@@ -44,7 +44,7 @@ namespace GraphQlClient.Core
 		
 		public static async Task<UnityWebRequest> PostAsync(UnityWebRequest request, string details){
 			string jsonData = JsonConvert.SerializeObject(new{query = details});
-			byte[] postData = Encoding.ASCII.GetBytes(jsonData);
+			byte[] postData = Encoding.UTF8.GetBytes(jsonData);
 			request.uploadHandler = new UploadHandlerRaw(postData);
 			OnRequestBegin  requestBegin = new OnRequestBegin();
 			requestBegin.FireEvent();
@@ -130,14 +130,14 @@ namespace GraphQlClient.Core
 
 		static async Task WebsocketInit(ClientWebSocket cws){
 			string jsonData = "{\"type\":\"connection_init\"}";
-			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.ASCII.GetBytes(jsonData));
+			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonData));
 			await cws.SendAsync(b, WebSocketMessageType.Text, true, CancellationToken.None);
 			GetWsReturn(cws);
 		}
 		
 		static async Task WebsocketSend(ClientWebSocket cws, string id, string details){
 			string jsonData = JsonConvert.SerializeObject(new {id = $"{id}",  type = "start", payload = new{query = details}});
-			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.ASCII.GetBytes(jsonData));
+			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonData));
 			await cws.SendAsync(b, WebSocketMessageType.Text, true, CancellationToken.None);
 		}
 		
@@ -204,7 +204,7 @@ namespace GraphQlClient.Core
 
 		public static async Task WebsocketDisconnect(ClientWebSocket cws, string socketId = "1"){
 			string jsonData = $"{{\"type\":\"stop\",\"id\":\"{socketId}\"}}";
-			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.ASCII.GetBytes(jsonData));
+			ArraySegment<byte> b = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonData));
 			await cws.SendAsync(b, WebSocketMessageType.Text, true, CancellationToken.None);
 			await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
 			OnSubscriptionCanceled subscriptionCanceled = new OnSubscriptionCanceled();
